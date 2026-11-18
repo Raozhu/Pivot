@@ -1,0 +1,88 @@
+name: Pivot
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    macOS: "15.0"
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: ""   # 填你自己的开发团队 ID / your Apple developer team ID
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_STRICT_CONCURRENCY: minimal
+targets:
+  PivotMac:
+    type: application
+    platform: macOS
+    sources: [Sources/Shared, Sources/Mac]
+    info:
+      path: Support/Mac-Info.plist
+      properties:
+        LSUIElement: true
+        NSIsTouchNative: true
+        CFBundleDisplayName: Pivot
+        NSLocalNetworkUsageDescription: 用于在本地网络上发现并无线连接已配对的 iPad。
+        NSBonjourServices: [_pivot._tcp]
+    settings:
+      base:
+        PRODUCT_NAME: Pivot
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.pivot.host
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Mac/Private/Bridging.h
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_APP_SANDBOX: NO
+        GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS: NO
+  PivotPad:
+    type: application
+    platform: iOS
+    sources: [Sources/Shared, Sources/Pad]
+    info:
+      path: Support/Pad-Info.plist
+      properties:
+        CFBundleDisplayName: Pivot
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UIStatusBarHidden: true
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSLocalNetworkUsageDescription: 用于让已配对的 Mac 通过无线连接这台 iPad。
+        NSBonjourServices: [_pivot._tcp]
+    settings:
+      base:
+        PRODUCT_NAME: Pivot
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.pivot
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "2"
+        # 远程连接内嵌的 EasyTier，由 scripts/build-easytier.sh 生成
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Pad/EasyTier.h
+        LIBRARY_SEARCH_PATHS: $(SRCROOT)/Vendor/EasyTier
+        OTHER_LDFLAGS: [-leasytier_ffi, -lresolv, -lc++]
+    dependencies:
+      - sdk: Security.framework
+      - sdk: SystemConfiguration.framework
+  PivotTouchDriver:
+    type: driver-extension
+    platform: macOS
+    sources:
+      - path: Driver/PivotTouchDriver.iig
+      - path: Driver/PivotTouchDriver.cpp
+    settings:
+      base:
+        SDKROOT: driverkit
+        SUPPORTED_PLATFORMS: driverkit
+        DRIVERKIT_DEPLOYMENT_TARGET: "27.2"
+        # Apple 芯片上驱动进程必须是 arm64e，只编 arm64 会在启动时报 Exec format error
+        ARCHS: arm64e
+        ONLY_ACTIVE_ARCH: NO
+        PRODUCT_NAME: PivotTouchDriver
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.pivot.host.touchdriver
+        INFOPLIST_FILE: Driver/Info.plist
+        HEADER_SEARCH_PATHS: "$(DERIVED_FILE_DIR)"
+        # 免费开发团队拿不到 DriverKit 权限：编译时不签名，由 scripts/build.sh 自签名（需关闭 SIP 和 AMFI）
+        CODE_SIGNING_ALLOWED: NO
+    dependencies:
+      - sdk: HIDDriverKit.framework
+      - sdk: DriverKit.framework

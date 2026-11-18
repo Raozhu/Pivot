@@ -1,0 +1,173 @@
+diff --git a/easytier/src/common/mod.rs b/easytier/src/common/mod.rs
+index e323465..0208478 100644
+--- a/easytier/src/common/mod.rs
++++ b/easytier/src/common/mod.rs
+@@ -106,6 +106,59 @@ pub fn shrink_dashmap<K: Eq + std::hash::Hash, V>(
+     }
+ }
+ 
++
++/// iOS 上由宿主 App 把当前真正上网的网卡名写进 ET_BIND_IF（随网络变化更新）
++#[cfg(target_os = "ios")]
++fn bind_if_name() -> Option<String> {
++    std::env::var("ET_BIND_IF").ok().filter(|v| !v.is_empty() && v != "auto")
++}
++
++/// ET_BIND_IF=auto：取默认路由里第一个不是隧道（utun/ipsec/ppp）的网卡，30 秒刷新一次
++#[cfg(target_os = "macos")]
++fn bind_if_name() -> Option<String> {
++    use std::sync::Mutex;
++    use std::time::{Duration, Instant};
++    static CACHE: Mutex<Option<(Instant, Option<String>)>> = Mutex::new(None);
++    let want = std::env::var("ET_BIND_IF").ok()?;
++    if want != "auto" {
++        return Some(want);
++    }
++    let mut cache = CACHE.lock().unwrap();
++    if let Some((t, v)) = cache.as_ref() {
++        if t.elapsed() < Duration::from_secs(30) {
++            return v.clone();
++        }
++    }
++    let out = std::process::Command::new("/usr/sbin/netstat").args(["-rn", "-f", "inet"]).output().ok();
++    let found = out.and_then(|o| {
++        String::from_utf8_lossy(&o.stdout).lines().filter(|l| l.starts_with("default")).find_map(|l| {
++            let netif = l.split_whitespace().nth(3)?;
++            let tunnel = ["utun", "ipsec", "ppp", "tun", "gif", "stf"].iter().any(|p| netif.starts_with(p));
++            (!tunnel).then(|| netif.to_string())
++        })
++    });
++    *cache = Some((Instant::now(), found.clone()));
++    found
++}
++
++/// Pivot 补丁：macOS 上 Shadowrocket 等代理的 TUN 会接管默认路由，没绑网卡的 UDP 套接字（STUN、打洞）
++/// 都被带进代理，NAT 被误判为对称型、打洞失败。设置 ET_BIND_IF=en0 时，把这些套接字绑到指定的物理网卡。
++pub async fn bind_udp<A: tokio::net::ToSocketAddrs>(addr: A) -> std::io::Result<tokio::net::UdpSocket> {
++    let sock = tokio::net::UdpSocket::bind(addr).await?;
++    #[cfg(any(target_os = "macos", target_os = "ios"))]
++    if let Some(name) = bind_if_name() {
++        {
++            let idx = nix::net::if_::if_nametoindex(name.as_str()).unwrap_or(0);
++            if let Some(idx) = std::num::NonZeroU32::new(idx) {
++                let s = socket2::SockRef::from(&sock);
++                let r = if sock.local_addr()?.is_ipv4() { s.bind_device_by_index_v4(Some(idx)) } else { s.bind_device_by_index_v6(Some(idx)) };
++                if let Err(e) = r { tracing::warn!(?e, "ET_BIND_IF bind failed"); }
++            }
++        }
++    }
++    Ok(sock)
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+diff --git a/easytier/src/common/stun.rs b/easytier/src/common/stun.rs
+index 008a63f..0eef461 100644
+--- a/easytier/src/common/stun.rs
++++ b/easytier/src/common/stun.rs
+@@ -616,7 +616,7 @@ impl UdpNatTypeDetector {
+         source_port: u16,
+         stun_server: SocketAddr,
+     ) -> Result<BindRequestResponse, Error> {
+-        let udp = Arc::new(UdpSocket::bind(format!("0.0.0.0:{}", source_port)).await?);
++        let udp = Arc::new(crate::common::bind_udp(format!("0.0.0.0:{}", source_port)).await?);
+         let client_builder = StunClientBuilder::new(udp.clone());
+         client_builder
+             .new_stun_client(stun_server)
+@@ -628,7 +628,7 @@ impl UdpNatTypeDetector {
+         &self,
+         source_port: u16,
+     ) -> Result<StunNatTypeDetectResult, Error> {
+-        let udp = Arc::new(UdpSocket::bind(format!("0.0.0.0:{}", source_port)).await?);
++        let udp = Arc::new(crate::common::bind_udp(format!("0.0.0.0:{}", source_port)).await?);
+         self.detect_nat_type_with_socket(udp).await
+     }
+ 
+diff --git a/easytier/src/connector/direct.rs b/easytier/src/connector/direct.rs
+index e6296f1..9254ed9 100644
+--- a/easytier/src/connector/direct.rs
++++ b/easytier/src/connector/direct.rs
+@@ -251,7 +251,7 @@ impl DirectConnectorManagerData {
+         let local_socket = {
+             let _g = self.global_ctx.net_ns.guard();
+             Arc::new(
+-                UdpSocket::bind("0.0.0.0:0")
++                crate::common::bind_udp("0.0.0.0:0")
+                     .await
+                     .with_context(|| format!("failed to bind local socket for {}", remote_url))?,
+             )
+diff --git a/easytier/src/connector/udp_hole_punch/common.rs b/easytier/src/connector/udp_hole_punch/common.rs
+index e82b066..fd7a3c8 100644
+--- a/easytier/src/connector/udp_hole_punch/common.rs
++++ b/easytier/src/connector/udp_hole_punch/common.rs
+@@ -290,7 +290,7 @@ impl UdpSocketArray {
+         while self.sockets.len() < self.max_socket_count {
+             let socket = {
+                 let _g = self.net_ns.guard();
+-                Arc::new(UdpSocket::bind("0.0.0.0:0").await?)
++                Arc::new(crate::common::bind_udp("0.0.0.0:0").await?)
+             };
+ 
+             self.add_new_socket(socket).await?;
+@@ -375,7 +375,7 @@ impl UdpHolePunchListener {
+     ) -> Result<Self, Error> {
+         let socket = {
+             let _g = peer_mgr.get_global_ctx().net_ns.guard();
+-            Arc::new(UdpSocket::bind((Ipv4Addr::UNSPECIFIED, port.unwrap_or(0))).await?)
++            Arc::new(crate::common::bind_udp((Ipv4Addr::UNSPECIFIED, port.unwrap_or(0))).await?)
+         };
+         let local_port = socket.local_addr()?.port();
+         let listen_url: url::Url = format!("udp://0.0.0.0:{local_port}").parse().unwrap();
+@@ -717,7 +717,7 @@ async fn check_udp_socket_local_addr(
+     global_ctx: ArcGlobalCtx,
+     remote_mapped_addr: SocketAddr,
+ ) -> Result<(), Error> {
+-    let socket = UdpSocket::bind("0.0.0.0:0").await?;
++    let socket = crate::common::bind_udp("0.0.0.0:0").await?;
+     socket.connect(remote_mapped_addr).await?;
+     if let Ok(local_addr) = socket.local_addr()
+         && let Some(err) = easytier_managed_local_addr_error(&global_ctx, local_addr)
+diff --git a/easytier/src/connector/udp_hole_punch/cone.rs b/easytier/src/connector/udp_hole_punch/cone.rs
+index bb738e0..d84e229 100644
+--- a/easytier/src/connector/udp_hole_punch/cone.rs
++++ b/easytier/src/connector/udp_hole_punch/cone.rs
+@@ -143,7 +143,7 @@ impl PunchConeHoleClient {
+ 
+         let local_socket = {
+             let _g = self.peer_mgr.get_global_ctx().net_ns.guard();
+-            Arc::new(UdpSocket::bind("0.0.0.0:0").await?)
++            Arc::new(crate::common::bind_udp("0.0.0.0:0").await?)
+         };
+         let local_addr = local_socket
+             .local_addr()
+diff --git a/easytier/src/connector/udp_hole_punch/sym_to_cone.rs b/easytier/src/connector/udp_hole_punch/sym_to_cone.rs
+index b527a50..b987c1c 100644
+--- a/easytier/src/connector/udp_hole_punch/sym_to_cone.rs
++++ b/easytier/src/connector/udp_hole_punch/sym_to_cone.rs
+@@ -450,7 +450,7 @@ impl PunchSymToConeHoleClient {
+         if self.try_direct_connect.load(Ordering::Relaxed)
+             && let Ok(tunnel) = try_connect_with_socket(
+                 global_ctx.clone(),
+-                Arc::new(UdpSocket::bind("0.0.0.0:0").await?),
++                Arc::new(crate::common::bind_udp("0.0.0.0:0").await?),
+                 remote_mapped_addr.into(),
+             )
+             .await
+diff --git a/easytier/src/gateway/socks5.rs b/easytier/src/gateway/socks5.rs
+index 0cd5d07..7885183 100644
+--- a/easytier/src/gateway/socks5.rs
++++ b/easytier/src/gateway/socks5.rs
+@@ -398,7 +398,11 @@ impl Socks5ServerNet {
+                 Some(BufferSize {
+                     tcp_rx_size: 1024 * 128,
+                     tcp_tx_size: 1024 * 128,
+-                    ..Default::default()
++                    // Pivot：UDP 端口转发要承载视频分片，默认 8 KB / 32 包的缓冲一个大帧就溢出
++                    udp_rx_size: 1024 * 1024,
++                    udp_tx_size: 256 * 1024,
++                    udp_rx_meta_size: 1024,
++                    udp_tx_meta_size: 256,
+                 }),
+             ),
+         );

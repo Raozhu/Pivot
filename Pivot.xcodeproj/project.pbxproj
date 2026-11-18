@@ -1,0 +1,778 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		064381304DFB1112F05D4A4E /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24993BB13941BDCF21F2CFF9 /* ScreenCapturer.swift */; };
+		073078A1A07B10B04F2BFFDF /* RealtimeClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8566E5655C4F5E4C669AB7 /* RealtimeClient.swift */; };
+		11B2CB5E50EE66FF6227ADF4 /* StreamViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FA86189FC507E3BC4E80B6B /* StreamViewController.swift */; };
+		169B2CEE1EA9DDD487E3C7D5 /* Wire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6835882D2520E7F78BB8DB18 /* Wire.swift */; };
+		18418A6E2FF2D521FDA398D2 /* IdleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1241034340F15B8CB80CD90 /* IdleView.swift */; };
+		22096A1D9DCA10F787434B11 /* Realtime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707B1FFAB481E29796ECFE94 /* Realtime.swift */; };
+		26A3E2367120C3422EBB84D9 /* PadServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10524890DCD7B0B654EAFA68 /* PadServer.swift */; };
+		2840EF081806990198057220 /* SidecarPortrait.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC871FB5422D1D084221BC5 /* SidecarPortrait.swift */; };
+		28A008504BD97AC1D2D7195A /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A78319470B706C2164235074 /* SystemConfiguration.framework */; };
+		2C3FEB82FF64ADD9AE777853 /* PivotTouchDriver.iig in Sources */ = {isa = PBXBuildFile; fileRef = 301BF71C5D77FB55D5B27F02 /* PivotTouchDriver.iig */; };
+		2F05268E63C00D3AC1712DCE /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DC163FFFF7C70C31DC7562DE /* Security.framework */; };
+		362253C8B0680A6E86F9307C /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FE5B4650CEEA164A99EB76 /* AudioPlayer.swift */; };
+		369DB9AA6CD8ED029292E9AC /* GestureSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD4DF0B98E00B972C5E4A22A /* GestureSelfTest.swift */; };
+		38325BD638F66DBFB1586DE5 /* KeyboardInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 689455277A14C2465C98E247 /* KeyboardInjector.swift */; };
+		3FC51BBB89DDCD672E3B42FD /* DisplayPlacement.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5AA952B4AE5BB73F01E42EE /* DisplayPlacement.swift */; };
+		4ADDCF22ABEF7BD779710E3B /* ClipboardSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01C50BA31241E001B7FDAEE4 /* ClipboardSync.swift */; };
+		4E493382BE04DDFDEC943F99 /* PadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A0019DB9C6F3C3F938B370 /* PadApp.swift */; };
+		53CC0311114F184DB131F7A9 /* VirtualDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1728DC44B93B40E1D2A81040 /* VirtualDisplay.swift */; };
+		562FC4CB38CEC25F15C29B84 /* Pairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56C112ADC913FF6D56F29ADA /* Pairing.swift */; };
+		60A1A3829D9706818A3878F8 /* ToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811EC6191E5FC4A0BE7B2D90 /* ToolbarView.swift */; };
+		60F6F2BA7D16A0578599D013 /* StreamSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57F6F9E9BEB3ABC6610BFAD /* StreamSession.swift */; };
+		63FF0A14E103BDDB62302629 /* StreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D20A8018492B7084307BB1E /* StreamView.swift */; };
+		68E35FB9F9802D8D56ED6ED5 /* EventRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62A5933BDFE32FA7E626E48D /* EventRecorder.swift */; };
+		69EABC256D3CEFA3E847C248 /* Remote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EC1784E8210130D48517A6 /* Remote.swift */; };
+		7350EEC2656706DBAE041BFE /* AudioCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6833B6CE9A6B8BCBF4184C0 /* AudioCodec.swift */; };
+		73D3987E2C70BA760452D129 /* Pairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56C112ADC913FF6D56F29ADA /* Pairing.swift */; };
+		775328200B89D8A0C76039D9 /* VideoEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19E48594B9184FF75B8CF76 /* VideoEncoder.swift */; };
+		7A8EE9EAAC6ED60C3F211436 /* TouchCursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB69081FA35D1CDBFA82953 /* TouchCursor.swift */; };
+		7AB218C23C78B135BAA24217 /* TouchInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 519D9898F85FB1B25F7F29F6 /* TouchInjector.swift */; };
+		7C8830087164D0AD26C2F17E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 15A67E690F8827CAEBEA11DD /* Assets.xcassets */; };
+		7E527BFFCA8A37FF686FFD07 /* HostController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CC0D57F02F1A3D40AD21ACD /* HostController.swift */; };
+		7E78ECAFEC598E9A51E201FF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 43B2B0974780FA033F981AA0 /* Assets.xcassets */; };
+		8265E9EEA90CE4BC8D3D57BD /* VideoRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7DE70EF00C40261073CA12 /* VideoRenderer.swift */; };
+		8361E13651B9E5BD10067D56 /* Realtime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707B1FFAB481E29796ECFE94 /* Realtime.swift */; };
+		8D9696B30C0BDCD4F7E33956 /* PadModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D354CA36D313633C8802B5D6 /* PadModel.swift */; };
+		9548C044329EEE02A295F668 /* USBMux.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64297EF80955C901BE90B5B3 /* USBMux.swift */; };
+		9B62F9DAD59719C03EF067BF /* Wireless.swift in Sources */ = {isa = PBXBuildFile; fileRef = B183BD13AA58879A566E655D /* Wireless.swift */; };
+		9CA3539B1AEB73AAC39A89BA /* AudioCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6833B6CE9A6B8BCBF4184C0 /* AudioCodec.swift */; };
+		9CFEF318FF56B0363E49859C /* PivotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84AD1BC3E2A267E0F0974DB6 /* PivotApp.swift */; };
+		A3E15BBC195047E1AC6BB0DF /* DriverKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7603D874BC699840AAF4C23 /* DriverKit.framework */; };
+		A7722E41339F4BA3FB8827BF /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C84A9FB32617079BD52ACEC /* Channel.swift */; };
+		A862932691E188F793ACB167 /* MeshLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65F4E8BE1F3E6833B2016BA3 /* MeshLink.swift */; };
+		B13BAD265B85197F9DC283E5 /* HIDDriverKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 103C7D7DF5AE887EB77146D0 /* HIDDriverKit.framework */; };
+		BD5FAA5E85F016FC635B150C /* SyntheticInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBEB38AF7446CCADBB26459 /* SyntheticInjector.swift */; };
+		CDE7CB6D54067182E95D8276 /* RealtimeHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = F05BAA3E9ACDCDECCA3A2EC4 /* RealtimeHost.swift */; };
+		D53569CDCE86E8F82009C711 /* PadClipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4154985447FABF6F5A409DC2 /* PadClipboard.swift */; };
+		D5419EE1789C13B834A7EF32 /* LetterboxInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C803076718F835D265CEAFE1 /* LetterboxInjector.swift */; };
+		D7E3629EAE5578B3703A2052 /* Wire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6835882D2520E7F78BB8DB18 /* Wire.swift */; };
+		DF00D92337C61F6D24F04C0B /* TouchDriverExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690E02322F63CA806C1C2EDE /* TouchDriverExtension.swift */; };
+		DF3104123E82A85C6C4A58B5 /* HIDTouchscreenInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6830E8897D1F7F17F072549C /* HIDTouchscreenInjector.swift */; };
+		E2FB78D289C6D06536FE810A /* SidecarTouchRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC84A978007B33EFCCB282E /* SidecarTouchRecognizer.swift */; };
+		F9248A19785E47A6EE53D09E /* PivotTouchDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C4D53A1CC44C14C739577D /* PivotTouchDriver.cpp */; };
+		FB4D92929FA4088200733346 /* AudioStreamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D30CF60757491FAE780F4A /* AudioStreamer.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		01C50BA31241E001B7FDAEE4 /* ClipboardSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardSync.swift; sourceTree = "<group>"; };
+		01EC1784E8210130D48517A6 /* Remote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Remote.swift; sourceTree = "<group>"; };
+		103C7D7DF5AE887EB77146D0 /* HIDDriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HIDDriverKit.framework; path = System/Library/Frameworks/HIDDriverKit.framework; sourceTree = SDKROOT; };
+		10524890DCD7B0B654EAFA68 /* PadServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadServer.swift; sourceTree = "<group>"; };
+		15A67E690F8827CAEBEA11DD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1728DC44B93B40E1D2A81040 /* VirtualDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VirtualDisplay.swift; sourceTree = "<group>"; };
+		1B7DE70EF00C40261073CA12 /* VideoRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRenderer.swift; sourceTree = "<group>"; };
+		24993BB13941BDCF21F2CFF9 /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
+		2AF404240C18AAF126E5D4AC /* EasyTier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EasyTier.h; sourceTree = "<group>"; };
+		2DBEB38AF7446CCADBB26459 /* SyntheticInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticInjector.swift; sourceTree = "<group>"; };
+		301BF71C5D77FB55D5B27F02 /* PivotTouchDriver.iig */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.iig; path = PivotTouchDriver.iig; sourceTree = "<group>"; };
+		3C84A9FB32617079BD52ACEC /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Channel.swift; sourceTree = "<group>"; };
+		3EC84A978007B33EFCCB282E /* SidecarTouchRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidecarTouchRecognizer.swift; sourceTree = "<group>"; };
+		3FA86189FC507E3BC4E80B6B /* StreamViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamViewController.swift; sourceTree = "<group>"; };
+		4154985447FABF6F5A409DC2 /* PadClipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadClipboard.swift; sourceTree = "<group>"; };
+		43B2B0974780FA033F981AA0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5062729F1CA9010B810E5871 /* PivotPad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PivotPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		519D9898F85FB1B25F7F29F6 /* TouchInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchInjector.swift; sourceTree = "<group>"; };
+		54D30CF60757491FAE780F4A /* AudioStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamer.swift; sourceTree = "<group>"; };
+		56C112ADC913FF6D56F29ADA /* Pairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pairing.swift; sourceTree = "<group>"; };
+		62A5933BDFE32FA7E626E48D /* EventRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecorder.swift; sourceTree = "<group>"; };
+		64297EF80955C901BE90B5B3 /* USBMux.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBMux.swift; sourceTree = "<group>"; };
+		65F4E8BE1F3E6833B2016BA3 /* MeshLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshLink.swift; sourceTree = "<group>"; };
+		6830E8897D1F7F17F072549C /* HIDTouchscreenInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDTouchscreenInjector.swift; sourceTree = "<group>"; };
+		6835882D2520E7F78BB8DB18 /* Wire.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wire.swift; sourceTree = "<group>"; };
+		689455277A14C2465C98E247 /* KeyboardInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardInjector.swift; sourceTree = "<group>"; };
+		690E02322F63CA806C1C2EDE /* TouchDriverExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchDriverExtension.swift; sourceTree = "<group>"; };
+		69FE5B4650CEEA164A99EB76 /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
+		6FD32A4A9366ECF678153D55 /* PivotMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PivotMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		707B1FFAB481E29796ECFE94 /* Realtime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Realtime.swift; sourceTree = "<group>"; };
+		73A0019DB9C6F3C3F938B370 /* PadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadApp.swift; sourceTree = "<group>"; };
+		7CC0D57F02F1A3D40AD21ACD /* HostController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostController.swift; sourceTree = "<group>"; };
+		811EC6191E5FC4A0BE7B2D90 /* ToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarView.swift; sourceTree = "<group>"; };
+		84AD1BC3E2A267E0F0974DB6 /* PivotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PivotApp.swift; sourceTree = "<group>"; };
+		99C4D53A1CC44C14C739577D /* PivotTouchDriver.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PivotTouchDriver.cpp; sourceTree = "<group>"; };
+		9D20A8018492B7084307BB1E /* StreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamView.swift; sourceTree = "<group>"; };
+		9D49CA4831D9512FC5F1E6C1 /* Bridging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Bridging.h; sourceTree = "<group>"; };
+		A78319470B706C2164235074 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		B183BD13AA58879A566E655D /* Wireless.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wireless.swift; sourceTree = "<group>"; };
+		B5AA952B4AE5BB73F01E42EE /* DisplayPlacement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayPlacement.swift; sourceTree = "<group>"; };
+		BD4DF0B98E00B972C5E4A22A /* GestureSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureSelfTest.swift; sourceTree = "<group>"; };
+		C0B5F9E681369B635345FCED /* PivotTouchDriver.dext */ = {isa = PBXFileReference; explicitFileType = "wrapper.driver-extension"; includeInIndex = 0; path = PivotTouchDriver.dext; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1241034340F15B8CB80CD90 /* IdleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleView.swift; sourceTree = "<group>"; };
+		C803076718F835D265CEAFE1 /* LetterboxInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterboxInjector.swift; sourceTree = "<group>"; };
+		CBC871FB5422D1D084221BC5 /* SidecarPortrait.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidecarPortrait.swift; sourceTree = "<group>"; };
+		D19E48594B9184FF75B8CF76 /* VideoEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoEncoder.swift; sourceTree = "<group>"; };
+		D354CA36D313633C8802B5D6 /* PadModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadModel.swift; sourceTree = "<group>"; };
+		D57F6F9E9BEB3ABC6610BFAD /* StreamSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSession.swift; sourceTree = "<group>"; };
+		D6833B6CE9A6B8BCBF4184C0 /* AudioCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCodec.swift; sourceTree = "<group>"; };
+		DC163FFFF7C70C31DC7562DE /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		EBB69081FA35D1CDBFA82953 /* TouchCursor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchCursor.swift; sourceTree = "<group>"; };
+		EE8566E5655C4F5E4C669AB7 /* RealtimeClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeClient.swift; sourceTree = "<group>"; };
+		F05BAA3E9ACDCDECCA3A2EC4 /* RealtimeHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeHost.swift; sourceTree = "<group>"; };
+		F7603D874BC699840AAF4C23 /* DriverKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DriverKit.framework; path = System/Library/Frameworks/DriverKit.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		13B45EB264E85EC5DDEA21EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B13BAD265B85197F9DC283E5 /* HIDDriverKit.framework in Frameworks */,
+				A3E15BBC195047E1AC6BB0DF /* DriverKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6ABB7F36D327B6F6D6ADFC3F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2F05268E63C00D3AC1712DCE /* Security.framework in Frameworks */,
+				28A008504BD97AC1D2D7195A /* SystemConfiguration.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		20236E6EC0F2D8167C6EFF6C /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				9D437E046E1DB7EF9C668DBA /* Mac */,
+				5DEC398A63F815BEDD5AF989 /* Pad */,
+				9115ED9772D9FEE890698CE6 /* Shared */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		3331FD9DCD1725735E4C91F9 = {
+			isa = PBXGroup;
+			children = (
+				81C921096C9CCCC76B0D539B /* Driver */,
+				20236E6EC0F2D8167C6EFF6C /* Sources */,
+				4CB959E3454049EB63D98988 /* Frameworks */,
+				4CCBAC7CA977648C2D61E40A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4CB959E3454049EB63D98988 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F7603D874BC699840AAF4C23 /* DriverKit.framework */,
+				103C7D7DF5AE887EB77146D0 /* HIDDriverKit.framework */,
+				DC163FFFF7C70C31DC7562DE /* Security.framework */,
+				A78319470B706C2164235074 /* SystemConfiguration.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		4CCBAC7CA977648C2D61E40A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				6FD32A4A9366ECF678153D55 /* PivotMac.app */,
+				5062729F1CA9010B810E5871 /* PivotPad.app */,
+				C0B5F9E681369B635345FCED /* PivotTouchDriver.dext */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5DEC398A63F815BEDD5AF989 /* Pad */ = {
+			isa = PBXGroup;
+			children = (
+				43B2B0974780FA033F981AA0 /* Assets.xcassets */,
+				69FE5B4650CEEA164A99EB76 /* AudioPlayer.swift */,
+				2AF404240C18AAF126E5D4AC /* EasyTier.h */,
+				C1241034340F15B8CB80CD90 /* IdleView.swift */,
+				65F4E8BE1F3E6833B2016BA3 /* MeshLink.swift */,
+				73A0019DB9C6F3C3F938B370 /* PadApp.swift */,
+				4154985447FABF6F5A409DC2 /* PadClipboard.swift */,
+				D354CA36D313633C8802B5D6 /* PadModel.swift */,
+				10524890DCD7B0B654EAFA68 /* PadServer.swift */,
+				EE8566E5655C4F5E4C669AB7 /* RealtimeClient.swift */,
+				9D20A8018492B7084307BB1E /* StreamView.swift */,
+				3FA86189FC507E3BC4E80B6B /* StreamViewController.swift */,
+				811EC6191E5FC4A0BE7B2D90 /* ToolbarView.swift */,
+				1B7DE70EF00C40261073CA12 /* VideoRenderer.swift */,
+			);
+			path = Pad;
+			sourceTree = "<group>";
+		};
+		77A00B8CEC65FD2AF4C2A067 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				84AD1BC3E2A267E0F0974DB6 /* PivotApp.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		81C921096C9CCCC76B0D539B /* Driver */ = {
+			isa = PBXGroup;
+			children = (
+				99C4D53A1CC44C14C739577D /* PivotTouchDriver.cpp */,
+				301BF71C5D77FB55D5B27F02 /* PivotTouchDriver.iig */,
+			);
+			path = Driver;
+			sourceTree = "<group>";
+		};
+		9115ED9772D9FEE890698CE6 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				D6833B6CE9A6B8BCBF4184C0 /* AudioCodec.swift */,
+				56C112ADC913FF6D56F29ADA /* Pairing.swift */,
+				707B1FFAB481E29796ECFE94 /* Realtime.swift */,
+				6835882D2520E7F78BB8DB18 /* Wire.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		9D437E046E1DB7EF9C668DBA /* Mac */ = {
+			isa = PBXGroup;
+			children = (
+				15A67E690F8827CAEBEA11DD /* Assets.xcassets */,
+				54D30CF60757491FAE780F4A /* AudioStreamer.swift */,
+				3C84A9FB32617079BD52ACEC /* Channel.swift */,
+				01C50BA31241E001B7FDAEE4 /* ClipboardSync.swift */,
+				B5AA952B4AE5BB73F01E42EE /* DisplayPlacement.swift */,
+				62A5933BDFE32FA7E626E48D /* EventRecorder.swift */,
+				7CC0D57F02F1A3D40AD21ACD /* HostController.swift */,
+				F05BAA3E9ACDCDECCA3A2EC4 /* RealtimeHost.swift */,
+				01EC1784E8210130D48517A6 /* Remote.swift */,
+				24993BB13941BDCF21F2CFF9 /* ScreenCapturer.swift */,
+				CBC871FB5422D1D084221BC5 /* SidecarPortrait.swift */,
+				D57F6F9E9BEB3ABC6610BFAD /* StreamSession.swift */,
+				64297EF80955C901BE90B5B3 /* USBMux.swift */,
+				D19E48594B9184FF75B8CF76 /* VideoEncoder.swift */,
+				1728DC44B93B40E1D2A81040 /* VirtualDisplay.swift */,
+				B183BD13AA58879A566E655D /* Wireless.swift */,
+				E1718966FAC7F1160B8467CC /* Input */,
+				AE95FBFE58F74BFF9C63C41D /* Private */,
+				77A00B8CEC65FD2AF4C2A067 /* UI */,
+			);
+			path = Mac;
+			sourceTree = "<group>";
+		};
+		AE95FBFE58F74BFF9C63C41D /* Private */ = {
+			isa = PBXGroup;
+			children = (
+				9D49CA4831D9512FC5F1E6C1 /* Bridging.h */,
+			);
+			path = Private;
+			sourceTree = "<group>";
+		};
+		E1718966FAC7F1160B8467CC /* Input */ = {
+			isa = PBXGroup;
+			children = (
+				BD4DF0B98E00B972C5E4A22A /* GestureSelfTest.swift */,
+				6830E8897D1F7F17F072549C /* HIDTouchscreenInjector.swift */,
+				689455277A14C2465C98E247 /* KeyboardInjector.swift */,
+				C803076718F835D265CEAFE1 /* LetterboxInjector.swift */,
+				3EC84A978007B33EFCCB282E /* SidecarTouchRecognizer.swift */,
+				2DBEB38AF7446CCADBB26459 /* SyntheticInjector.swift */,
+				EBB69081FA35D1CDBFA82953 /* TouchCursor.swift */,
+				690E02322F63CA806C1C2EDE /* TouchDriverExtension.swift */,
+				519D9898F85FB1B25F7F29F6 /* TouchInjector.swift */,
+			);
+			path = Input;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1FA981AF536C850B8749E77D /* PivotPad */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6BF3CC84A8D993DDFB0462DB /* Build configuration list for PBXNativeTarget "PivotPad" */;
+			buildPhases = (
+				10A4279EE3176DC28B69E77E /* Sources */,
+				03BD3521A266DD648FF6F411 /* Resources */,
+				6ABB7F36D327B6F6D6ADFC3F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PivotPad;
+			packageProductDependencies = (
+			);
+			productName = PivotPad;
+			productReference = 5062729F1CA9010B810E5871 /* PivotPad.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8EA6953C50C9DECF4E9C2B48 /* PivotTouchDriver */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CD51F81E08586C9B175F5715 /* Build configuration list for PBXNativeTarget "PivotTouchDriver" */;
+			buildPhases = (
+				598FDE9DC531C82FE3EB5388 /* Sources */,
+				13B45EB264E85EC5DDEA21EA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PivotTouchDriver;
+			packageProductDependencies = (
+			);
+			productName = PivotTouchDriver;
+			productReference = C0B5F9E681369B635345FCED /* PivotTouchDriver.dext */;
+			productType = "com.apple.product-type.driver-extension";
+		};
+		E7038DE8A6B607FDA9761BC0 /* PivotMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 11D402E0A9191400344AF289 /* Build configuration list for PBXNativeTarget "PivotMac" */;
+			buildPhases = (
+				5E79E3D95B69ED8A2EE0B02C /* Sources */,
+				E78BA315287C1D3E30467FCD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PivotMac;
+			packageProductDependencies = (
+			);
+			productName = PivotMac;
+			productReference = 6FD32A4A9366ECF678153D55 /* PivotMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F5E9424769DC15DBFAE25182 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					1FA981AF536C850B8749E77D = {
+						DevelopmentTeam = ;
+						ProvisioningStyle = Automatic;
+					};
+					8EA6953C50C9DECF4E9C2B48 = {
+						DevelopmentTeam = ;
+						ProvisioningStyle = Automatic;
+					};
+					E7038DE8A6B607FDA9761BC0 = {
+						DevelopmentTeam = ;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 994A1903A4A4D5176E3C039D /* Build configuration list for PBXProject "Pivot" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 3331FD9DCD1725735E4C91F9;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 4CCBAC7CA977648C2D61E40A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E7038DE8A6B607FDA9761BC0 /* PivotMac */,
+				1FA981AF536C850B8749E77D /* PivotPad */,
+				8EA6953C50C9DECF4E9C2B48 /* PivotTouchDriver */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		03BD3521A266DD648FF6F411 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7E78ECAFEC598E9A51E201FF /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E78BA315287C1D3E30467FCD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7C8830087164D0AD26C2F17E /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		10A4279EE3176DC28B69E77E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9CA3539B1AEB73AAC39A89BA /* AudioCodec.swift in Sources */,
+				362253C8B0680A6E86F9307C /* AudioPlayer.swift in Sources */,
+				18418A6E2FF2D521FDA398D2 /* IdleView.swift in Sources */,
+				A862932691E188F793ACB167 /* MeshLink.swift in Sources */,
+				4E493382BE04DDFDEC943F99 /* PadApp.swift in Sources */,
+				D53569CDCE86E8F82009C711 /* PadClipboard.swift in Sources */,
+				8D9696B30C0BDCD4F7E33956 /* PadModel.swift in Sources */,
+				26A3E2367120C3422EBB84D9 /* PadServer.swift in Sources */,
+				562FC4CB38CEC25F15C29B84 /* Pairing.swift in Sources */,
+				8361E13651B9E5BD10067D56 /* Realtime.swift in Sources */,
+				073078A1A07B10B04F2BFFDF /* RealtimeClient.swift in Sources */,
+				63FF0A14E103BDDB62302629 /* StreamView.swift in Sources */,
+				11B2CB5E50EE66FF6227ADF4 /* StreamViewController.swift in Sources */,
+				60A1A3829D9706818A3878F8 /* ToolbarView.swift in Sources */,
+				8265E9EEA90CE4BC8D3D57BD /* VideoRenderer.swift in Sources */,
+				D7E3629EAE5578B3703A2052 /* Wire.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		598FDE9DC531C82FE3EB5388 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F9248A19785E47A6EE53D09E /* PivotTouchDriver.cpp in Sources */,
+				2C3FEB82FF64ADD9AE777853 /* PivotTouchDriver.iig in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5E79E3D95B69ED8A2EE0B02C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7350EEC2656706DBAE041BFE /* AudioCodec.swift in Sources */,
+				FB4D92929FA4088200733346 /* AudioStreamer.swift in Sources */,
+				A7722E41339F4BA3FB8827BF /* Channel.swift in Sources */,
+				4ADDCF22ABEF7BD779710E3B /* ClipboardSync.swift in Sources */,
+				3FC51BBB89DDCD672E3B42FD /* DisplayPlacement.swift in Sources */,
+				68E35FB9F9802D8D56ED6ED5 /* EventRecorder.swift in Sources */,
+				369DB9AA6CD8ED029292E9AC /* GestureSelfTest.swift in Sources */,
+				DF3104123E82A85C6C4A58B5 /* HIDTouchscreenInjector.swift in Sources */,
+				7E527BFFCA8A37FF686FFD07 /* HostController.swift in Sources */,
+				38325BD638F66DBFB1586DE5 /* KeyboardInjector.swift in Sources */,
+				D5419EE1789C13B834A7EF32 /* LetterboxInjector.swift in Sources */,
+				73D3987E2C70BA760452D129 /* Pairing.swift in Sources */,
+				9CFEF318FF56B0363E49859C /* PivotApp.swift in Sources */,
+				22096A1D9DCA10F787434B11 /* Realtime.swift in Sources */,
+				CDE7CB6D54067182E95D8276 /* RealtimeHost.swift in Sources */,
+				69EABC256D3CEFA3E847C248 /* Remote.swift in Sources */,
+				064381304DFB1112F05D4A4E /* ScreenCapturer.swift in Sources */,
+				2840EF081806990198057220 /* SidecarPortrait.swift in Sources */,
+				E2FB78D289C6D06536FE810A /* SidecarTouchRecognizer.swift in Sources */,
+				60F6F2BA7D16A0578599D013 /* StreamSession.swift in Sources */,
+				BD5FAA5E85F016FC635B150C /* SyntheticInjector.swift in Sources */,
+				7A8EE9EAAC6ED60C3F211436 /* TouchCursor.swift in Sources */,
+				DF00D92337C61F6D24F04C0B /* TouchDriverExtension.swift in Sources */,
+				7AB218C23C78B135BAA24217 /* TouchInjector.swift in Sources */,
+				9548C044329EEE02A295F668 /* USBMux.swift in Sources */,
+				775328200B89D8A0C76039D9 /* VideoEncoder.swift in Sources */,
+				53CC0311114F184DB131F7A9 /* VirtualDisplay.swift in Sources */,
+				169B2CEE1EA9DDD487E3C7D5 /* Wire.swift in Sources */,
+				9B62F9DAD59719C03EF067BF /* Wireless.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		111C05199B1FC411EA790773 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Support/Pad-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Vendor/EasyTier";
+				OTHER_LDFLAGS = (
+					"-leasytier_ffi",
+					"-lresolv",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.pivot;
+				PRODUCT_NAME = Pivot;
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = Sources/Pad/EasyTier.h;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		302AE69BD5E9552F7059461F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		3575802C6A030626EA1CB01A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64e;
+				CODE_SIGNING_ALLOWED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				DRIVERKIT_DEPLOYMENT_TARGET = 27.2;
+				HEADER_SEARCH_PATHS = "$(DERIVED_FILE_DIR)";
+				INFOPLIST_FILE = Driver/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.pivot.host.touchdriver;
+				PRODUCT_NAME = PivotTouchDriver;
+				SDKROOT = driverkit;
+				SUPPORTED_PLATFORMS = driverkit;
+			};
+			name = Release;
+		};
+		3DE21FDA1A57B5592FDAE27C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				INFOPLIST_FILE = "Support/Mac-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.pivot.host;
+				PRODUCT_NAME = Pivot;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = Sources/Mac/Private/Bridging.h;
+			};
+			name = Debug;
+		};
+		503BE17263613757843BFF76 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = ;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		6E8150F78216A1EC5F727688 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Support/Pad-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Vendor/EasyTier";
+				OTHER_LDFLAGS = (
+					"-leasytier_ffi",
+					"-lresolv",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.pivot;
+				PRODUCT_NAME = Pivot;
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = Sources/Pad/EasyTier.h;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		A69B2713DF7EE193E1755DA3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				INFOPLIST_FILE = "Support/Mac-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.pivot.host;
+				PRODUCT_NAME = Pivot;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = Sources/Mac/Private/Bridging.h;
+			};
+			name = Release;
+		};
+		CB7136B5DBA6FDAF11F99A36 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64e;
+				CODE_SIGNING_ALLOWED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				DRIVERKIT_DEPLOYMENT_TARGET = 27.2;
+				HEADER_SEARCH_PATHS = "$(DERIVED_FILE_DIR)";
+				INFOPLIST_FILE = Driver/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.pivot.host.touchdriver;
+				PRODUCT_NAME = PivotTouchDriver;
+				SDKROOT = driverkit;
+				SUPPORTED_PLATFORMS = driverkit;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		11D402E0A9191400344AF289 /* Build configuration list for PBXNativeTarget "PivotMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3DE21FDA1A57B5592FDAE27C /* Debug */,
+				A69B2713DF7EE193E1755DA3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6BF3CC84A8D993DDFB0462DB /* Build configuration list for PBXNativeTarget "PivotPad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6E8150F78216A1EC5F727688 /* Debug */,
+				111C05199B1FC411EA790773 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		994A1903A4A4D5176E3C039D /* Build configuration list for PBXProject "Pivot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				503BE17263613757843BFF76 /* Debug */,
+				302AE69BD5E9552F7059461F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CD51F81E08586C9B175F5715 /* Build configuration list for PBXNativeTarget "PivotTouchDriver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB7136B5DBA6FDAF11F99A36 /* Debug */,
+				3575802C6A030626EA1CB01A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F5E9424769DC15DBFAE25182 /* Project object */;
+}

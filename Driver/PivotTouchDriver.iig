@@ -1,0 +1,15 @@
+#include <HIDDriverKit/IOUserHIDEventService.iig>
+
+/// Pivot 虚拟触摸屏的驱动：把 Pivot 发来的 10 点触控报告变成系统原生的数字化仪触控事件，
+/// 并把触摸屏绑定到 Pivot 的虚拟显示器上。
+class PivotTouchDriver : public IOUserHIDEventService
+{
+public:
+    virtual bool init() override;
+    virtual void free() override;
+    virtual kern_return_t Start(IOService *provider) override;
+    virtual bool handleStart(IOService *provider) override;
+    virtual void handleReport(uint64_t timestamp, uint8_t *report,
+                              uint32_t reportLength, IOHIDReportType type,
+                              uint32_t reportID) override;
+};
