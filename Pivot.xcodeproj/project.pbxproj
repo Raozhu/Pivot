@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		017035402C07E175E053265E /* DirectPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 586406981CD350081B9B0D7D /* DirectPath.swift */; };
 		064381304DFB1112F05D4A4E /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24993BB13941BDCF21F2CFF9 /* ScreenCapturer.swift */; };
 		073078A1A07B10B04F2BFFDF /* RealtimeClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8566E5655C4F5E4C669AB7 /* RealtimeClient.swift */; };
 		11B2CB5E50EE66FF6227ADF4 /* StreamViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FA86189FC507E3BC4E80B6B /* StreamViewController.swift */; };
@@ -26,6 +27,7 @@
 		4E493382BE04DDFDEC943F99 /* PadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A0019DB9C6F3C3F938B370 /* PadApp.swift */; };
 		53CC0311114F184DB131F7A9 /* VirtualDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1728DC44B93B40E1D2A81040 /* VirtualDisplay.swift */; };
 		562FC4CB38CEC25F15C29B84 /* Pairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56C112ADC913FF6D56F29ADA /* Pairing.swift */; };
+		5E04148289798BF8F07B0FCB /* DirectPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 586406981CD350081B9B0D7D /* DirectPath.swift */; };
 		60A1A3829D9706818A3878F8 /* ToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811EC6191E5FC4A0BE7B2D90 /* ToolbarView.swift */; };
 		60F6F2BA7D16A0578599D013 /* StreamSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57F6F9E9BEB3ABC6610BFAD /* StreamSession.swift */; };
 		63FF0A14E103BDDB62302629 /* StreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D20A8018492B7084307BB1E /* StreamView.swift */; };
@@ -83,6 +85,7 @@
 		519D9898F85FB1B25F7F29F6 /* TouchInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchInjector.swift; sourceTree = "<group>"; };
 		54D30CF60757491FAE780F4A /* AudioStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamer.swift; sourceTree = "<group>"; };
 		56C112ADC913FF6D56F29ADA /* Pairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pairing.swift; sourceTree = "<group>"; };
+		586406981CD350081B9B0D7D /* DirectPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectPath.swift; sourceTree = "<group>"; };
 		62A5933BDFE32FA7E626E48D /* EventRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecorder.swift; sourceTree = "<group>"; };
 		64297EF80955C901BE90B5B3 /* USBMux.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBMux.swift; sourceTree = "<group>"; };
 		65F4E8BE1F3E6833B2016BA3 /* MeshLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshLink.swift; sourceTree = "<group>"; };
@@ -224,6 +227,7 @@
 			isa = PBXGroup;
 			children = (
 				D6833B6CE9A6B8BCBF4184C0 /* AudioCodec.swift */,
+				586406981CD350081B9B0D7D /* DirectPath.swift */,
 				56C112ADC913FF6D56F29ADA /* Pairing.swift */,
 				707B1FFAB481E29796ECFE94 /* Realtime.swift */,
 				6835882D2520E7F78BB8DB18 /* Wire.swift */,
@@ -409,6 +413,7 @@
 			files = (
 				9CA3539B1AEB73AAC39A89BA /* AudioCodec.swift in Sources */,
 				362253C8B0680A6E86F9307C /* AudioPlayer.swift in Sources */,
+				017035402C07E175E053265E /* DirectPath.swift in Sources */,
 				18418A6E2FF2D521FDA398D2 /* IdleView.swift in Sources */,
 				A862932691E188F793ACB167 /* MeshLink.swift in Sources */,
 				4E493382BE04DDFDEC943F99 /* PadApp.swift in Sources */,
@@ -443,6 +448,7 @@
 				FB4D92929FA4088200733346 /* AudioStreamer.swift in Sources */,
 				A7722E41339F4BA3FB8827BF /* Channel.swift in Sources */,
 				4ADDCF22ABEF7BD779710E3B /* ClipboardSync.swift in Sources */,
+				5E04148289798BF8F07B0FCB /* DirectPath.swift in Sources */,
 				3FC51BBB89DDCD672E3B42FD /* DisplayPlacement.swift in Sources */,
 				68E35FB9F9802D8D56ED6ED5 /* EventRecorder.swift in Sources */,
 				369DB9AA6CD8ED029292E9AC /* GestureSelfTest.swift in Sources */,

@@ -51,6 +51,26 @@ enum MsgType: UInt8 {
     case audio = 19          // mac → pad，u32 序号 + 一个 Opus 包（10 ms，48 kHz 立体声）
     case audioEnable = 20    // pad → mac，u8：1 传声音，0 停（Mac 连采集都停掉）
     case clipboard = 21      // 双向，u8 类型（0 文字 UTF‑8，1 PNG 图片）+ 内容
+    case quality = 22        // pad → mac，u8：StreamQuality
+    case pause = 23          // pad → mac，u8：1 iPad 退到后台（停发画面和声音，会话保留），0 回到前台
+    case padStats = 24       // pad → mac，JSON(PadStats)：每秒一次 iPad 端的实况，写进 Mac 日志
+    case rtDirect = 25       // 双向，JSON(DirectPath.Candidates)：自己直连套接字的公网地址，对方据此打洞
+}
+
+/// iPad 端每秒的实况（所有时间单位毫秒）。Mac 看不到 iPad 的日志，靠这个判断卡在哪一段
+struct PadStats: Codable {
+    var frames: Int          // 收到的画面帧数
+    var frameGapMax: Double  // 相邻两帧到达的最大间隔
+    var frameHitches: Int    // 到达间隔超过 40 ms 的次数（画面在动时）
+    var presented: Int       // 真正送上屏的帧数
+    var presentGapMax: Double
+    var decodeMax: Double    // 解码入队最长耗时
+    var touches: Int         // 发出的触控包
+    var touchLagMax: Double  // 手指事件发生 → 发出去的最长耗时（主线程忙就会变大）
+    var mainHitchMax: Double // 主线程一帧的最长耗时（正常约 16.7）
+    var net: String          // wifi / cellular / wired / other
+    var thermal: Int         // 0 正常 … 3 严重
+    var lowPower: Bool
 }
 
 struct Hello: Codable {
@@ -68,6 +88,29 @@ struct Hello: Codable {
     var pairingKey: String?
     /// iPad 端支持的能力（旧版没有这个字段）。见 `PadCaps`
     var caps: [String]?
+    /// 清晰度偏好（StreamQuality 原始值；旧版没有，按自动处理）
+    var quality: UInt8?
+}
+
+/// 无线时的清晰度偏好。决定带宽紧张时先降分辨率还是先降帧率
+enum StreamQuality: UInt8, CaseIterable {
+    /// 按网络自动：远程偏流畅，局域网偏清晰
+    case auto = 0
+    /// 流畅优先：分辨率降得更早、更多，帧率尽量满
+    case smooth = 1
+    /// 清晰优先：分辨率尽量高，带宽很紧时宁可降到 30 帧
+    case clear = 2
+    /// 原画：始终按 iPad 屏幕原分辨率编码，只靠码率和帧率适应网络
+    case original = 3
+
+    var label: String {
+        switch self {
+        case .auto: return "自动"
+        case .smooth: return "流畅优先"
+        case .clear: return "清晰优先"
+        case .original: return "原画"
+        }
+    }
 }
 
 /// iPad 在握手里声明的能力。Mac 只对声明过的能力启用对应功能，旧版 iPad 照常工作。
@@ -191,17 +234,19 @@ struct VideoHeader {
     var isKey: Bool
     var index: UInt32
     var captureNs: UInt64
+    /// 长期参考帧刷新：参考的是 iPad 确认收到过的帧，丢帧后不用等关键帧，解码器状态还在就能直接接上
+    var isRefresh = false
 
     func encode() -> Data {
         var d = Data(capacity: Self.size)
-        d.append(isKey ? 1 : 0); d.appendLE(index); d.appendLE(captureNs)
+        d.append((isKey ? 1 : 0) | (isRefresh ? 2 : 0)); d.appendLE(index); d.appendLE(captureNs)
         return d
     }
 
     static func decode(_ d: Data) -> VideoHeader? {
         var r = ByteReader(d)
         guard let f: UInt8 = r.read(), let i: UInt32 = r.read(), let t: UInt64 = r.read() else { return nil }
-        return VideoHeader(isKey: f & 1 == 1, index: i, captureNs: t)
+        return VideoHeader(isKey: f & 1 == 1, index: i, captureNs: t, isRefresh: f & 2 != 0)
     }
 }
 

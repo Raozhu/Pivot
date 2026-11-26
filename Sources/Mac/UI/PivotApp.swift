@@ -133,7 +133,7 @@ struct PanelView: View {
                 Image(systemName: s.transport == .wired ? "cable.connector" : s.transport == .remote ? "globe" : "wifi").font(.system(size: 10))
                 Text("\(s.transport.label)\(s.realtime ? "（UDP）" : "") · \(s.injector)").font(.system(size: 11))
                 Spacer()
-                Text("\(s.width) × \(s.height) 像素\(s.hiDPI ? " · 2x" : "")\(s.encodePercent < 100 ? " · 流畅优先 \(s.encodePercent)%" : "")").font(.system(size: 11)).monospacedDigit()
+                Text("\(s.width) × \(s.height) 像素\(s.hiDPI ? " · 2x" : "")\(s.encodePercent < 100 ? " · 编码 \(s.encodePercent)%" : "")").font(.system(size: 11)).monospacedDigit()
             }
             .foregroundStyle(.secondary)
         }

@@ -11,6 +11,9 @@ final class StreamView: UIView {
     /// 手指拖动时用系统预测的位置（往前看约一帧）代替当前位置发给 Mac
     var predictTouches = true
 
+    /// 滚动先行：单指竖向滑动时，iPad 先按手指把画面挪过去，Mac 的新画面到了再无缝对上（藏住网络延迟）
+    var scrollAhead = true
+
     private var ids: [ObjectIdentifier: UInt8] = [:]
     private static let hoverID: UInt8 = 250
 
@@ -89,10 +92,111 @@ final class StreamView: UIView {
         onTouches?(TouchPacket(timestamp: UInt64(latest * 1e9), contacts: contacts))
     }
 
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, with: event, phase: .began) }
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, with: event, phase: .moved) }
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, with: event, phase: .ended) }
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, with: event, phase: .cancelled) }
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, with: event, phase: .began); ahead(event, phase: .began) }
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, with: event, phase: .moved); ahead(event, phase: .moved) }
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, with: event, phase: .ended); ahead(event, phase: .ended) }
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, with: event, phase: .cancelled); ahead(event, phase: .cancelled) }
+
+    // MARK: 滚动先行
+
+    private struct Ahead {
+        var history: [(ts: UInt64, y: CGFloat)] = []
+        var startX: CGFloat = 0, startY: CGFloat = 0
+        var startTs: UInt64 = 0
+        var lastMoveTs: UInt64 = 0
+        var engaged = false
+        var disqualified = false
+        var liftTs: UInt64?
+    }
+    private var aheadState: Ahead?
+    /// 最近一帧画面已经反映到的触控时间戳（iPad 时钟，纳秒）
+    private var shownTouchTs: UInt64 = 0
+    private var lastTouchTsFrame: UInt64 = 0
+    private var resetWork: DispatchWorkItem?
+
+    private func ahead(_ event: UIEvent?, phase: TouchPhase) {
+        guard scrollAhead else { return }
+        let fingers = event?.allTouches?.filter { $0.type == .direct && $0.phase != .ended && $0.phase != .cancelled } ?? []
+        let now = monotonicNs()
+        switch phase {
+        case .began:
+            // 只管单指；新手势开始时上一次的偏移如果还在，就地收掉
+            setOffset(0)
+            guard fingers.count == 1, let t = fingers.first else { aheadState = nil; return }
+            let p = t.preciseLocation(in: self)
+            var a = Ahead()
+            a.startX = p.x; a.startY = p.y
+            a.startTs = UInt64(t.timestamp * 1e9)
+            a.lastMoveTs = a.startTs
+            a.history = [(a.startTs, p.y)]
+            // 上下边缘起手是系统 / Mac 的边缘手势，不先行
+            a.disqualified = p.y < 30 || p.y > bounds.height - 30
+            aheadState = a
+        case .moved:
+            guard var a = aheadState, !a.disqualified else { return }
+            guard fingers.count == 1, let t = fingers.first else { a.disqualified = true; aheadState = a; setOffset(0); return }
+            let p = t.preciseLocation(in: self)
+            let ts = UInt64(t.timestamp * 1e9)
+            let dx = abs(p.x - a.startX), dy = abs(p.y - a.startY)
+            if !a.engaged {
+                // 先按住不动再拖：多半是选文字 / 拖窗口，不是滚动
+                if ts - a.startTs > 350_000_000, dy < 6 { a.disqualified = true; aheadState = a; return }
+                // 最近 1 秒内要有带触控时间戳的画面（UDP），才知道画面落后多少
+                if dy > 12 {
+                    if dy > dx * 2.5, now - lastTouchTsFrame < 1_000_000_000 { a.engaged = true } else { a.disqualified = true; aheadState = a; return }
+                }
+            }
+            a.history.append((ts, p.y))
+            if a.history.count > 240 { a.history.removeFirst(a.history.count - 240) }
+            a.lastMoveTs = ts
+            aheadState = a
+            if a.engaged { applyAhead() }
+        case .ended, .cancelled:
+            guard var a = aheadState else { return }
+            if !a.engaged { aheadState = nil; return }
+            a.liftTs = a.lastMoveTs
+            aheadState = a
+            applyAhead()
+            // 兜底：画面迟迟没追上（比如这次滑动其实没滚动任何东西），半秒后收回
+            resetWork?.cancel()
+            let w = DispatchWorkItem { [weak self] in self?.aheadState = nil; self?.setOffset(0, animated: true) }
+            resetWork = w
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: w)
+        default:
+            break
+        }
+    }
+
+    /// 刚上屏的画面反映到了哪个触控（主线程）
+    func frameShown(touchTs: UInt64) {
+        guard touchTs > 0 else { return }
+        lastTouchTsFrame = monotonicNs()
+        shownTouchTs = max(shownTouchTs, touchTs)
+        guard let a = aheadState, a.engaged else { return }
+        if let lift = a.liftTs, shownTouchTs >= lift {
+            aheadState = nil
+            resetWork?.cancel()
+            setOffset(0)
+            return
+        }
+        applyAhead()
+    }
+
+    private func applyAhead() {
+        guard let a = aheadState, a.engaged, let last = a.history.last else { return }
+        // 画面已经反映到的手指位置：在历史里找 shownTouchTs 那一刻（早于手势开始就算起点）
+        var yShown = a.startY
+        for h in a.history.reversed() where h.ts <= shownTouchTs { yShown = h.y; break }
+        setOffset(min(160, max(-160, last.y - yShown)))
+    }
+
+    private func setOffset(_ y: CGFloat, animated: Bool = false) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(!animated)
+        if animated { CATransaction.setAnimationDuration(0.12) }
+        displayLayer.setAffineTransform(y == 0 ? .identity : CGAffineTransform(translationX: 0, y: y))
+        CATransaction.commit()
+    }
 
     @objc private func hovered(_ g: UIHoverGestureRecognizer) {
         let phase: TouchPhase

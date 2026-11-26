@@ -365,7 +365,8 @@ final class HostController: ObservableObject {
             self.session = nil
             self.snapshot = StreamSession.Snapshot()
             self.lastFailure = reason
-            self.park(display, userInitiated: self.paused)
+            // iPad 是退到后台后断的：显示器留 5 分钟，等它回来接着用（窗口不乱跑）
+            self.park(display, userInitiated: self.paused, seconds: session?.padPaused == true ? 300 : 5)
             if let (device, fd) = self.pendingWired {
                 self.pendingWired = nil
                 if self.paused { close(fd) } else {
@@ -390,13 +391,16 @@ final class HostController: ObservableObject {
     }
 
     /// 会话结束后把显示器留几秒。期间同一台 iPad 重新连上（换了线路或只是闪断）就接着用。
-    private func park(_ display: VirtualDisplay?, userInitiated: Bool) {
+    /// iPad 退到后台后断开的留 5 分钟；“仅 iPad”的 Mac 屏幕在会话结束时就已恢复，不会黑着等。
+    private func park(_ display: VirtualDisplay?, userInitiated: Bool, seconds: Double = 5) {
         parkGeneration += 1
         guard let display, !userInitiated else { parkedDisplay = nil; return }
         parkedDisplay = display
         let generation = parkGeneration
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+        if seconds > 5 { Log.info("iPad 在后台：虚拟显示器保留 \(Int(seconds / 60)) 分钟") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
             guard let self, self.parkGeneration == generation else { return }
+            if seconds > 5 { Log.info("iPad 超过 \(Int(seconds / 60)) 分钟没回来，收起虚拟显示器") }
             self.parkedDisplay = nil
         }
     }

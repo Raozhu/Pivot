@@ -99,9 +99,14 @@ struct ToolbarView: View {
                 // 跟手选项：出问题时可以单独关掉
                 Menu {
                     Toggle(isOn: $model.touchPredict) { Label("触控预测", systemImage: "hand.point.up.left") }
+                    Toggle(isOn: $model.scrollAhead) { Label("滚动先行", systemImage: "arrow.up.and.down.text.horizontal") }
                     if model.superResolutionSupported {
                         Toggle(isOn: $model.superResolution) { Label("超分辨率", systemImage: "sparkles") }
                     }
+                    Picker(selection: $model.quality) {
+                        ForEach(StreamQuality.allCases, id: \.self) { Text($0.label).tag($0) }
+                    } label: { Label("清晰度", systemImage: "photo") }
+                    .pickerStyle(.menu)
                 } label: {
                     Image(systemName: "speedometer")
                         .font(.system(size: 15, weight: .medium))
@@ -109,7 +114,7 @@ struct ToolbarView: View {
                         .foregroundStyle(.white)
                         .background(Circle().fill(Color.white.opacity(0.12)))
                 }
-                .accessibilityLabel("跟手选项")
+                .accessibilityLabel("画质与跟手")
                 Button { model.setKeyboardVisible(!model.keyboardVisible) } label: {
                     Image(systemName: model.keyboardVisible ? "keyboard.chevron.compact.down" : "keyboard")
                         .font(.system(size: 16, weight: .medium))

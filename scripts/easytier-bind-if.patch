@@ -1,8 +1,8 @@
 diff --git a/easytier/src/common/mod.rs b/easytier/src/common/mod.rs
-index e323465..0208478 100644
+index e323465..6d76151 100644
 --- a/easytier/src/common/mod.rs
 +++ b/easytier/src/common/mod.rs
-@@ -106,6 +106,59 @@ pub fn shrink_dashmap<K: Eq + std::hash::Hash, V>(
+@@ -106,6 +106,63 @@ pub fn shrink_dashmap<K: Eq + std::hash::Hash, V>(
      }
  }
  
@@ -45,25 +45,29 @@ index e323465..0208478 100644
 +/// 都被带进代理，NAT 被误判为对称型、打洞失败。设置 ET_BIND_IF=en0 时，把这些套接字绑到指定的物理网卡。
 +pub async fn bind_udp<A: tokio::net::ToSocketAddrs>(addr: A) -> std::io::Result<tokio::net::UdpSocket> {
 +    let sock = tokio::net::UdpSocket::bind(addr).await?;
++    let v4 = sock.local_addr()?.is_ipv4();
++    bind_to_physical_if(socket2::SockRef::from(&sock), v4);
++    Ok(sock)
++}
++
++/// 同上，用于 TCP STUN 等自己建的套接字（要在 connect 之前调用）
++#[allow(unused_variables)]
++pub fn bind_to_physical_if(s: socket2::SockRef<'_>, v4: bool) {
 +    #[cfg(any(target_os = "macos", target_os = "ios"))]
 +    if let Some(name) = bind_if_name() {
-+        {
-+            let idx = nix::net::if_::if_nametoindex(name.as_str()).unwrap_or(0);
-+            if let Some(idx) = std::num::NonZeroU32::new(idx) {
-+                let s = socket2::SockRef::from(&sock);
-+                let r = if sock.local_addr()?.is_ipv4() { s.bind_device_by_index_v4(Some(idx)) } else { s.bind_device_by_index_v6(Some(idx)) };
-+                if let Err(e) = r { tracing::warn!(?e, "ET_BIND_IF bind failed"); }
-+            }
++        let idx = nix::net::if_::if_nametoindex(name.as_str()).unwrap_or(0);
++        if let Some(idx) = std::num::NonZeroU32::new(idx) {
++            let r = if v4 { s.bind_device_by_index_v4(Some(idx)) } else { s.bind_device_by_index_v6(Some(idx)) };
++            if let Err(e) = r { tracing::warn!(?e, "ET_BIND_IF bind failed"); }
 +        }
 +    }
-+    Ok(sock)
 +}
 +
  #[cfg(test)]
  mod tests {
      use super::*;
 diff --git a/easytier/src/common/stun.rs b/easytier/src/common/stun.rs
-index 008a63f..0eef461 100644
+index 008a63f..47bb522 100644
 --- a/easytier/src/common/stun.rs
 +++ b/easytier/src/common/stun.rs
 @@ -616,7 +616,7 @@ impl UdpNatTypeDetector {
@@ -84,6 +88,32 @@ index 008a63f..0eef461 100644
          self.detect_nat_type_with_socket(udp).await
      }
  
+@@ -787,6 +787,7 @@ impl TcpStunClient {
+ 
+         socket2_socket.set_nonblocking(true)?;
+         socket2_socket.set_reuse_address(true)?;
++        crate::common::bind_to_physical_if(socket2::SockRef::from(&socket2_socket), !bind_addr.is_ipv6());
+ 
+         #[cfg(all(unix, not(target_os = "solaris"), not(target_os = "illumos")))]
+         {
+@@ -978,7 +979,7 @@ impl StunInfoCollectorTrait for StunInfoCollector {
+     }
+ 
+     async fn get_udp_port_mapping(&self, local_port: u16) -> Result<SocketAddr, Error> {
+-        let udp = Arc::new(UdpSocket::bind(format!("0.0.0.0:{}", local_port)).await?);
++        let udp = Arc::new(crate::common::bind_udp(format!("0.0.0.0:{}", local_port)).await?);
+         self.get_udp_port_mapping_with_socket(udp).await
+     }
+ 
+@@ -1155,7 +1156,7 @@ impl StunInfoCollector {
+     async fn get_public_ipv6(servers: &[String]) -> Option<Ipv6Addr> {
+         let mut ips = HostResolverIter::new(servers.to_vec(), 10, true);
+         while let Some(ip) = ips.next().await {
+-            let Ok(udp_socket) = UdpSocket::bind("[::]:0".to_string()).await else {
++            let Ok(udp_socket) = crate::common::bind_udp("[::]:0".to_string()).await else {
+                 break;
+             };
+             let udp = Arc::new(udp_socket);
 diff --git a/easytier/src/connector/direct.rs b/easytier/src/connector/direct.rs
 index e6296f1..9254ed9 100644
 --- a/easytier/src/connector/direct.rs

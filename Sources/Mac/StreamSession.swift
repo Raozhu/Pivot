@@ -116,6 +116,11 @@ final class StreamSession {
     private var injector: TouchInjector?
     private let keyboard = KeyboardInjector()
     private var ended = false
+    /// iPad 退到后台（主线程读写）。会话保留，画面和声音停发；之后断线也把显示器多留一会儿等它回来
+    private(set) var padPaused = false
+    private var audioBeforePause = false
+    /// 同一个标记的帧队列副本：暂停期间不编码
+    private var framesPaused = false
 
     // 仅在 frameQueue 上访问
     private var encoder: VideoEncoder?
@@ -137,6 +142,8 @@ final class StreamSession {
     private var mbps = 0.0
     private var hiDPI = false
     private var streaming = false
+    /// 推流期间不让系统给 Pivot 打盹（App Nap 会把发送线程的定时器拖慢到每秒只发几帧）
+    private var activity: NSObjectProtocol?
 
     /// 主线程回调。结束时把虚拟显示器交还，调用方可以留给下一次会话接着用。
     var onEnded: ((String?, VirtualDisplay?) -> Void)?
@@ -145,10 +152,20 @@ final class StreamSession {
     var onPairingKey: ((String, Data, String) -> Void)?
 
     // 无线码率自适应
-    private static let wirelessBitrateRange = 1_500_000...28_000_000
+    private static let wirelessBitrateRange = 1_000_000...28_000_000
     private var wirelessBitrate = 16_000_000
     private var lastAdaptDropped = 0
+    /// 上次自适应以来真正发出去的视频字节（statsLock）。画面静止时链路没被用上，不能据此加码率
+    private var adaptBytes = 0
+    /// 最近一次发视频帧和收到回执的时间（statsLock）。发了帧却一直没回执 = 链路堵了
+    private var lastVideoSendNs: UInt64 = 0
+    private var lastAckNs: UInt64 = 0
+    private var lastStallCutNs: UInt64 = 0
+    /// iPad 回报的丢包率，取最近几次里的较大值（statsLock）
+    private var recentLoss = 0.0
     private var calmSeconds = 0
+    /// 开播时的码率：降下去之后，平稳几秒就可以无条件回到这里（静止画面没流量，不能拿用量判断）
+    private var startBitrate = 6_000_000
     private var adaptTimer: Timer?
 
     /// - Parameters:
@@ -161,6 +178,7 @@ final class StreamSession {
         self.solo = mode == .solo
         // 远程的带宽通常小得多，从较低码率起步，再按实际情况往上加
         if transport == .remote { wirelessBitrate = 6_000_000 }
+        startBitrate = wirelessBitrate
         self.scale = scale
         self.adoptable = adopt
         self.channel = channel
@@ -185,7 +203,7 @@ final class StreamSession {
         case .touch:
             if let packet = TouchPacket.decode(payload) {
                 noteTouchArrival(packet)
-                injector?.handle(packet)
+                if isWireless { dejitterTouch(packet) } else { injector?.handle(packet) }
                 DispatchQueue.main.async { self.noteTapForTextFocus(packet) }
             }
         case .key:
@@ -206,15 +224,25 @@ final class StreamSession {
                 latencyEMA = latencyEMA == 0 ? ms : latencyEMA * 0.9 + ms * 0.1
             }
             ackCount += 1
+            lastAckNs = monotonicNs()
             statsLock.unlock()
+            encoder?.acknowledge(index: index)
         case .keyframeRequest:
+            // 负载 1：iPad 只是丢了帧、解码器状态还在，用长期参考帧刷新就够；否则要真正的关键帧
+            let refreshOK = payload.first == 1
             frameQueue.async { [self] in
-                encoder?.requestKeyframe()
+                if refreshOK { encoder?.requestRecovery() } else { encoder?.requestKeyframe() }
                 resendLast()
             }
         case .audioEnable:
             let on = payload.first == 1
             DispatchQueue.main.async { self.setAudio(on) }
+        case .quality:
+            guard let q = payload.first.flatMap(StreamQuality.init) else { return }
+            DispatchQueue.main.async { self.setQuality(q) }
+        case .pause:
+            let on = payload.first == 1
+            DispatchQueue.main.async { self.setPadPaused(on) }
         case .clipboard:
             // 就在读线程上写：紧跟着到的 ⌘V 处理前剪贴板已经是新内容
             clipboard.apply(payload)
@@ -229,6 +257,13 @@ final class StreamSession {
         case .mode:
             guard let v = payload.first, let m = DisplayMode(rawValue: Int(v)) else { return }
             DispatchQueue.main.async { self.onModeRequest?(m) }
+        case .rtDirect:
+            if let c = try? JSONDecoder().decode(DirectPath.Candidates.self, from: payload) {
+                Log.info("实时通道：iPad 直连地址 \(c.addrs.joined(separator: ", "))，开始打洞")
+                (channel as? HybridChannel)?.addDirectCandidates(c.addrs)
+            }
+        case .padStats:
+            if let s = try? JSONDecoder().decode(PadStats.self, from: payload) { logPadStats(s) }
         case .bye:
             DispatchQueue.main.async { self.finish(reason: nil) }
         default:
@@ -248,9 +283,10 @@ final class StreamSession {
         }
         viewport = hello.viewport
         fps = max(30, min(120, hello.maxFPS))
+        quality = hello.quality.flatMap(StreamQuality.init) ?? .auto
         if isWireless {
-            captureFPS = Self.fpsTier(bitrate: wirelessBitrate, cap: streamFPSCap)
-            encodeScale = canScale ? Self.scaleTier(bitrate: wirelessBitrate, remote: transport == .remote, sr: canSuperResolve) : 1
+            captureFPS = Self.fpsTier(bitrate: wirelessBitrate, cap: streamFPSCap, quality: quality)
+            encodeScale = canScale ? Self.scaleTier(bitrate: wirelessBitrate, remote: transport == .remote, sr: canSuperResolve, quality: quality) : 1
         } else {
             captureFPS = fps
         }
@@ -446,6 +482,10 @@ final class StreamSession {
             guard !ended else { await capturer.stop(); return }
             capturedDisplayID = target
             streaming = true
+            if activity == nil {
+                activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .latencyCritical, .idleSystemSleepDisabled],
+                                                                 reason: "Pivot 推流")
+            }
             Log.info("开始推流 \(w)x\(h)@\(min(f, captureFPS))")
             onChanged?()
             startBitrateAdaptation()
@@ -463,18 +503,47 @@ final class StreamSession {
         guard isWireless, adaptTimer == nil else { return }
         let timer = Timer(timeInterval: 1, repeats: true) { [weak self] t in
             guard let self, !self.ended else { t.invalidate(); return }
+            // iPad 在后台：没有回执是正常的，不算堵，也不动码率
+            guard !self.padPaused else { return }
             self.statsLock.lock()
             let droppedNow = self.dropped
+            let used = self.adaptBytes * 8
+            self.adaptBytes = 0
+            let now = monotonicNs()
+            // 有帧在等回执，且超过 0.6 秒一个回执都没来：链路堵了（大帧把路塞住），马上砍半
+            let stalled = self.lastVideoSendNs > self.lastAckNs && now - self.lastVideoSendNs > 600_000_000
+            let loss = self.recentLoss
+            self.recentLoss *= 0.5
             self.statsLock.unlock()
+            // 只有 UDP 实时通道会真丢帧；TCP 不丢，回执慢只是路堵，再塞一个关键帧只会更堵
+            if stalled, (self.channel as? HybridChannel)?.realtimeActive == true {
+                // iPad 多半在等关键帧，但它的请求走 TCP，丢包时会被重传拖好几秒：Mac 主动补一个
+                self.frameQueue.async {
+                    self.encoder?.requestRecovery()
+                    self.resendLast()
+                }
+            }
             let delta = droppedNow - self.lastAdaptDropped
             self.lastAdaptDropped = droppedNow
             var next = self.wirelessBitrate
-            if delta >= 3 {
+            if loss >= 0.08 {
+                // 路上丢包（比如经腾讯云中继，带宽很小）：直接压到实际发出量以下，发得越多丢得越多
+                let byUse = used > 500_000 ? Int(Double(used) * (1 - loss) * 0.9) : next
+                next = min(Int(Double(next) * 0.75), byUse)
+                self.calmSeconds = 0
+                Log.info(String(format: "丢包 %.0f%%：码率降到 %.1f Mbps", loss * 100, Double(max(next, Self.wirelessBitrateRange.lowerBound)) / 1e6))
+            } else if stalled, now - self.lastStallCutNs > 2_000_000_000, self.wirelessBitrate > 3_000_000 {
+                self.lastStallCutNs = now
                 next = Int(Double(next) * 0.7)
                 self.calmSeconds = 0
-            } else if delta == 0 {
+                Log.info("回执停了：码率降三成")
+            } else if delta >= 3 {
+                next = Int(Double(next) * 0.7)
+                self.calmSeconds = 0
+            } else if delta == 0, loss < 0.03 {
                 self.calmSeconds += 1
-                if self.calmSeconds >= 4 { next = Int(Double(next) * 1.12); self.calmSeconds = 2 }
+                // 只有链路真被用到四成以上才往上加：画面静止时没流量，"没丢帧"说明不了带宽够
+                if self.calmSeconds >= 4, next < self.startBitrate || Double(used) >= Double(next) * 0.4 { next = Int(Double(next) * 1.12); self.calmSeconds = 2 }
             } else {
                 self.calmSeconds = 0
             }
@@ -483,8 +552,8 @@ final class StreamSession {
             self.wirelessBitrate = next
             self.frameQueue.async { self.encoder?.setBitrate(next) }
             (self.channel as? HybridChannel)?.setBitrate(next)
-            let tier = Self.fpsTier(bitrate: next, cap: self.streamFPSCap, current: self.captureFPS)
-            let scale = self.canScale ? Self.scaleTier(bitrate: next, remote: self.transport == .remote, sr: self.canSuperResolve, current: self.encodeScale) : 1
+            let tier = Self.fpsTier(bitrate: next, cap: self.streamFPSCap, quality: self.quality, current: self.captureFPS)
+            let scale = self.canScale ? Self.scaleTier(bitrate: next, remote: self.transport == .remote, sr: self.canSuperResolve, quality: self.quality, current: self.encodeScale) : 1
             guard tier != self.captureFPS || scale != self.encodeScale else { return }
             Log.info(String(format: "码率 %.1f Mbps：编码 %.0f%% 分辨率，%d 帧", Double(next) / 1e6, scale * 100, tier))
             self.captureFPS = tier
@@ -498,9 +567,17 @@ final class StreamSession {
     private func offerRealtime(_ hello: Hello) {
         guard isWireless, hello.caps?.contains(PadCaps.realtime) == true, let hybrid = channel as? HybridChannel,
               ProcessInfo.processInfo.environment["PIVOT_RT"] != "off",
-              let port = PairingStore.remotePort(for: hello.deviceID), let key = PairingStore.key(for: hello.deviceID),
-              let offer = hybrid.enableRealtime(port: port, pairingKey: key) else { return }
+              let port = PairingStore.remotePort(for: hello.deviceID), let key = PairingStore.key(for: hello.deviceID) else { return }
+        hybrid.remote = transport == .remote
+        // 远程时 iPad 的组网是用户态端口转发（no_tun），大块 UDP 一突发就丢 20–30%（隧道本身 0%），
+        // 丢帧后整屏等关键帧 = 卡死。所以远程画面走 TCP，只有触控和回执走 UDP
+        hybrid.videoOverRealtime = transport != .remote || ProcessInfo.processInfo.environment["PIVOT_RT"] == "on"
+        guard let offer = hybrid.enableRealtime(port: port, pairingKey: key) else { return }
         hybrid.setBitrate(wirelessBitrate)
+        hybrid.onLossRate = { [weak self] r in
+            guard let self else { return }
+            self.statsLock.lock(); self.recentLoss = max(r, self.recentLoss * 0.6); self.statsLock.unlock()
+        }
         hybrid.onRealtimeLoss = { [weak self] n in
             guard let self else { return }
             // 补不回来的帧按跳帧算，码率自适应会因此降码率
@@ -508,31 +585,79 @@ final class StreamSession {
         }
         channel.send(.rtOffer, jsonEncode(offer))
         Log.info("实时通道：UDP 端口 \(port)，等 iPad 接入")
+        if transport == .remote, ProcessInfo.processInfo.environment["PIVOT_DIRECT"] != "off" {
+            // 远程直连：问到公网地址就经控制连接告诉 iPad，iPad 也会报它的，双方互相打洞
+            hybrid.onDirectCandidate = { [weak self] a in
+                self?.channel.send(.rtDirect, jsonEncode(DirectPath.Candidates(addrs: a)))
+            }
+            hybrid.enableDirect()
+        }
     }
 
     /// 旧版 iPad 只认和画面区域一样大的帧（否则一直停在「正在准备画面」），所以只对声明过的 iPad 降编码分辨率
     private var canScale: Bool { hello?.caps?.contains(PadCaps.scaledFrames) ?? false }
+    /// 清晰度偏好（iPad 工具条里选）
+    private var quality = StreamQuality.auto
+
+    /// iPad 换了清晰度：按当前码率立刻重新选分辨率和帧率（主线程）
+    private func setQuality(_ q: StreamQuality) {
+        guard q != quality else { return }
+        quality = q
+        Log.info("清晰度：\(q.label)")
+        guard isWireless, streaming, !ended else { return }
+        let tier = Self.fpsTier(bitrate: wirelessBitrate, cap: streamFPSCap, quality: q)
+        let scale = canScale ? Self.scaleTier(bitrate: wirelessBitrate, remote: transport == .remote, sr: canSuperResolve, quality: q) : 1
+        guard tier != captureFPS || scale != encodeScale else { return }
+        Log.info(String(format: "清晰度切换：编码 %.0f%% 分辨率，%d 帧", scale * 100, tier))
+        captureFPS = tier
+        applyEncodeScale(scale)
+    }
+
     private var canSuperResolve: Bool { hello?.caps?.contains(PadCaps.superResolution) ?? false }
 
     /// 无线推流的帧率上限：局域网跟随 iPad（可到 120），远程最多 60，省下的带宽给清晰度
     private var streamFPSCap: Int { transport == .remote ? min(fps, 60) : fps }
 
-    /// 帧率只在码率掉到底时才降到 30，其余时候一直满帧
-    private static func fpsTier(bitrate: Int, cap: Int, current: Int? = nil) -> Int {
+    /// 帧率只在码率掉到底时才降到 30，其余时候一直满帧。清晰优先和原画更早降帧，把带宽留给分辨率
+    private static func fpsTier(bitrate: Int, cap: Int, quality: StreamQuality = .auto, current: Int? = nil) -> Int {
         let low = min(cap, 30)
-        if let current, current == low, cap != low { return bitrate >= 2_600_000 ? cap : low }
-        return bitrate >= 2_000_000 ? cap : low
+        let floor = (quality == .clear || quality == .original) ? 4_000_000 : 2_000_000
+        if let current, current == low, cap != low { return bitrate >= floor * 13 / 10 ? cap : low }
+        return bitrate >= floor ? cap : low
     }
 
     /// 码率对应的编码分辨率比例。档位之间留缓冲：升档要比门槛高 20%，降档要比当前档门槛低 12%，
     /// 码率在边界附近来回波动时分辨率不跟着反复跳（每次切换都要重建编码器、发一个关键帧）
-    private static func scaleTier(bitrate: Int, remote: Bool, sr: Bool = false, current: Double? = nil) -> Double {
-        // 远程整体低一档：帧更小，网络抖一下时更快追上，跟手优先。
-        // iPad 能超分时中间两档再小一点：源画面不超过 1280 宽才能超分，放大回来比直接拉伸清楚
-        let tiers: [(threshold: Int, scale: Double)] = remote
-            ? (sr ? [(11_000_000, 0.8), (6_500_000, 0.55), (3_800_000, 0.45), (0, 0.4)]
-                  : [(11_000_000, 0.8), (6_500_000, 0.65), (3_800_000, 0.5), (0, 0.4)])
-            : [(11_000_000, 1.0), (6_500_000, 0.8), (3_800_000, 0.65), (0, 0.5)]
+    private static func scaleTier(bitrate: Int, remote: Bool, sr: Bool = false, quality: StreamQuality = .auto, current: Double? = nil) -> Double {
+        let picked = scaleTierByQuality(bitrate: bitrate, remote: remote, sr: sr, quality: quality, current: current)
+        // 远程码率很低时（经中继、5G 很差）不管选哪档都封顶：满分辨率的关键帧太大，拼帧时限内根本送不完，只会卡死
+        guard remote else { return picked }
+        if bitrate < 1_800_000 { return min(picked, 0.5) }
+        if bitrate < 2_600_000 { return min(picked, 0.65) }
+        return picked
+    }
+
+    private static func scaleTierByQuality(bitrate: Int, remote: Bool, sr: Bool, quality: StreamQuality, current: Double?) -> Double {
+        let tiers: [(threshold: Int, scale: Double)]
+        switch quality {
+        case .original:
+            return 1
+        case .clear:
+            // 清晰优先：码率还过得去就原画，再紧也不低于 55%。远程原画要码率真够才上，满分辨率的大帧最容易把路塞住
+            tiers = remote ? [(11_000_000, 1.0), (6_500_000, 0.8), (3_800_000, 0.65), (0, 0.55)]
+                           : [(6_500_000, 1.0), (3_800_000, 0.8), (0, 0.65)]
+        case .smooth:
+            // 流畅优先：比自动再低一档，帧更小，网络一抖更快追上
+            tiers = remote ? [(11_000_000, 0.65), (6_500_000, 0.5), (3_800_000, 0.4), (0, 0.35)]
+                           : [(11_000_000, 0.8), (6_500_000, 0.65), (3_800_000, 0.5), (0, 0.4)]
+        case .auto:
+            // 远程整体低一档：帧更小，网络抖一下时更快追上，跟手优先。
+            // iPad 能超分时中间两档再小一点：源画面不超过 1280 宽才能超分，放大回来比直接拉伸清楚
+            tiers = remote
+                ? (sr ? [(11_000_000, 0.8), (6_500_000, 0.55), (3_800_000, 0.45), (0, 0.4)]
+                      : [(11_000_000, 0.8), (6_500_000, 0.65), (3_800_000, 0.5), (0, 0.4)])
+                : [(11_000_000, 1.0), (6_500_000, 0.8), (3_800_000, 0.65), (0, 0.5)]
+        }
         let plain = tiers.first { bitrate >= $0.threshold }!.scale
         guard let current, plain != current, let cur = tiers.firstIndex(where: { $0.scale == current }) else { return plain }
         let up = plain > current
@@ -573,6 +698,33 @@ final class StreamSession {
         guard placementReady, !mirror, let display, let id = hello?.deviceID,
               let now = DisplayPlacement.capture(display.displayID) else { return }
         DisplayPlacement.save(now, deviceID: id)
+    }
+
+    /// 主线程：iPad 退到后台 / 回到前台
+    private func setPadPaused(_ on: Bool) {
+        guard on != padPaused, !ended else { return }
+        padPaused = on
+        Log.info(on ? "iPad 退到后台：暂停推流，会话保留" : "iPad 回到前台：继续推流")
+        if on {
+            // iPad 那边的手指和按键都已经没了，Mac 上别留着按下的状态
+            injector?.reset()
+            keyboard.releaseAll()
+            audioBeforePause = audio != nil
+            setAudio(false)
+        } else if audioBeforePause {
+            setAudio(true)
+        }
+        statsLock.lock(); lastAckNs = monotonicNs(); lastVideoSendNs = 0; statsLock.unlock()
+        frameQueue.async { [self] in
+            framesPaused = on
+            if on {
+                refineWork?.cancel()
+                pendingBuffer = nil
+            } else {
+                encoder?.requestKeyframe()
+                resendLast()
+            }
+        }
     }
 
     /// 主线程
@@ -670,6 +822,64 @@ final class StreamSession {
 
     // 触控到达的抖动（读线程写、统计时取走）。iPad 每 8～16 ms 发一包，到达间隔忽大忽小就是网络在攒包
     private var touchStats = (count: 0, maxGap: UInt64(0), lastArrival: UInt64(0), minSkew: Int64.max, maxSkew: Int64.min)
+
+    // 触控去抖：家里 WiFi / iPad 那侧会把触控包攒成一坨发出来（实测到达抖动 60–80 ms，而链路只有 8 ms），
+    // 一坨同时注入，滚动就一跳一跳。按 iPad 打的时间戳把它们重新匀开：
+    // 目标注入时刻 = 触控发生时刻 + 最近 2 秒里最快的一次路上耗时 + 缓冲。缓冲随抖动自适应，最多 40 ms
+    private let touchQueue = DispatchQueue(label: "pivot.touch", qos: .userInteractive)
+    private var dj = (minSkew: Int64.max, minAt: UInt64(0), prevMin: Int64.max, jitter: 0.0, lastTarget: UInt64(0))
+
+    private func dejitterTouch(_ packet: TouchPacket) {
+        touchQueue.async { [weak self] in
+            guard let self else { return }
+            let now = monotonicNs()
+            let skew = Int64(bitPattern: now &- packet.timestamp)
+            // 最快路上耗时取两个 2 秒窗口的较小值：窗口滚动时不会突然跳
+            if now - self.dj.minAt > 2_000_000_000 {
+                self.dj.prevMin = self.dj.minSkew == .max ? skew : self.dj.minSkew
+                self.dj.minSkew = skew
+                self.dj.minAt = now
+            } else {
+                self.dj.minSkew = min(self.dj.minSkew, skew)
+            }
+            let base = min(self.dj.minSkew, self.dj.prevMin)
+            let excess = Double(max(0, skew - base))
+            // 抖动估计：涨得快、落得慢
+            self.dj.jitter = excess > self.dj.jitter ? self.dj.jitter * 0.6 + excess * 0.4 : self.dj.jitter * 0.97 + excess * 0.03
+            let budget = Int64(min(40_000_000, self.dj.jitter))
+            var target = UInt64(bitPattern: Int64(bitPattern: packet.timestamp) &+ base &+ budget)
+            // 不能比上一包早（保证顺序），也不能拖得比到达晚 40 ms 以上
+            target = max(target, self.dj.lastTarget)
+            target = min(target, now + 40_000_000)
+            self.dj.lastTarget = target
+            self.touchPending.append((target, packet))
+            if self.touchPending.count == 1 { self.drainTouches() }
+        }
+    }
+
+    /// 按顺序放行到点的触控；队头没到点就定一个到点再来（只在 touchQueue 上跑）
+    private var touchPending: [(target: UInt64, packet: TouchPacket)] = []
+    private func drainTouches() {
+        let now = monotonicNs()
+        while let head = touchPending.first, head.target <= now + 500_000 {
+            touchPending.removeFirst()
+            injector?.handle(head.packet)
+        }
+        guard let head = touchPending.first else { return }
+        touchQueue.asyncAfter(deadline: .now() + .nanoseconds(Int(head.target - now))) { [weak self] in self?.drainTouches() }
+    }
+
+    /// iPad 每秒报的实况：只在画面在动或在触控时记一行，静止时不刷屏
+    private func logPadStats(_ s: PadStats) {
+        guard s.frames > 2 || s.touches > 0 else { return }
+        var line = String(format: "iPad：收 %d 帧 最大间隔 %.0f ms 卡顿 %d 次 | 上屏 %d 最大间隔 %.0f ms | 解码 %.1f ms",
+                          s.frames, s.frameGapMax, s.frameHitches, s.presented, s.presentGapMax, s.decodeMax)
+        if s.touches > 0 { line += String(format: " | 触控 %d 包 发出延迟 %.0f ms", s.touches, s.touchLagMax) }
+        line += String(format: " | 主线程最长 %.0f ms | %@", s.mainHitchMax, s.net)
+        if s.thermal >= 2 { line += " 发热\(s.thermal)" }
+        if s.lowPower { line += " 低电量模式" }
+        Log.info(line)
+    }
 
     private func noteTouchArrival(_ packet: TouchPacket) {
         let now = monotonicNs()
@@ -814,14 +1024,16 @@ final class StreamSession {
 
     private func rebuildEncoder(width: Int, height: Int, fps: Int) {
         encoder?.invalidate()
-        let enc = VideoEncoder(width: width, height: height, fps: fps, bitrate: isWireless ? wirelessBitrate : nil)
+        // 无线才开长期参考帧：有线不丢包，用不上
+        let enc = VideoEncoder(width: width, height: height, fps: fps, bitrate: isWireless ? wirelessBitrate : nil,
+                               longTermReference: isWireless && ProcessInfo.processInfo.environment["PIVOT_LTR"] != "off")
         enc?.onOutput = { [weak self] out in self?.send(out) }
         encoder = enc
         if enc == nil { Log.info("编码器创建失败 \(width)x\(height)") }
     }
 
     private func submit(_ buffer: CVPixelBuffer, captureNs: UInt64) {
-        guard let encoder, CVPixelBufferGetWidth(buffer) == encoder.width, CVPixelBufferGetHeight(buffer) == encoder.height else { return }
+        guard !framesPaused, let encoder, CVPixelBufferGetWidth(buffer) == encoder.width, CVPixelBufferGetHeight(buffer) == encoder.height else { return }
         lastBuffer = buffer
         // 对端来不及收时不排队：只留最新一帧，等通道空了再编，延迟不会越积越多
         if channel.videoBacklog >= 2 {
@@ -843,7 +1055,7 @@ final class StreamSession {
     }
 
     private func resendLast() {
-        guard let buffer = lastBuffer, channel.videoBacklog < 2 else { return }
+        guard !framesPaused, let buffer = lastBuffer, channel.videoBacklog < 2 else { return }
         encode(buffer, captureNs: monotonicNs())
     }
 
@@ -874,10 +1086,14 @@ final class StreamSession {
         captureTimes[out.index] = out.captureNs
         if captureTimes.count > 240 { captureTimes = captureTimes.filter { out.index &- $0.key < 120 } }
         bytesSent += out.data.count
+        adaptBytes += out.data.count
+        let sendNow = monotonicNs()
+        if lastVideoSendNs <= lastAckNs { lastVideoSendNs = sendNow }   // 记下"开始等回执"的时刻
         let enc = Double(out.encodeMicros) / 1000
         encodeEMA = encodeEMA == 0 ? enc : encodeEMA * 0.9 + enc * 0.1
         statsLock.unlock()
-        channel.sendVideo(header: VideoHeader(isKey: out.isKey, index: out.index, captureNs: out.captureNs), data: out.data)
+        if out.isRefresh { Log.info("丢帧恢复：长期参考帧刷新（\(out.data.count / 1024) KB，不发关键帧）") }
+        channel.sendVideo(header: VideoHeader(isKey: out.isKey, index: out.index, captureNs: out.captureNs, isRefresh: out.isRefresh), data: out.data)
     }
 
     // MARK: - 状态
@@ -933,6 +1149,7 @@ final class StreamSession {
         ended = true
         applySolo()
         streaming = false
+        if let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         Log.info("会话结束\(reason.map { "：\($0)" } ?? "")")
         injector?.reset()
         injector = nil

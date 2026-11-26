@@ -15,8 +15,8 @@ struct PivotPadApp: App {
                 .statusBarHidden()
                 .onAppear { model.start() }
                 .onChange(of: scenePhase) { _, phase in
-                    // 退到后台时系统会冻结网络，主动断开让 Mac 立刻收起显示器
-                    if phase == .active { model.start() } else if phase == .background { model.stop() }
+                    // 推流中退到后台：先暂停、连接保持约 30 秒；断开后 5 分钟内回来保留画面直接重连
+                    if phase == .active { model.enterForeground() } else if phase == .background { model.enterBackground() }
                 }
         }
     }

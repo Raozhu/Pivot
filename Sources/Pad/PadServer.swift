@@ -33,6 +33,9 @@ final class PadServer {
     /// 当前连接是不是经组网主动连出去的（远程）
     private var dialedRemote = false
 
+    /// Mac 报来的直连地址（实时通道还没建好时先存着）
+    private var pendingDirect: [String]?
+
     private func closeRealtime() {
         rt?.close()
         rt = nil
@@ -56,7 +59,9 @@ final class PadServer {
         } else {
             return
         }
-        guard let client = RTClient(host: host, port: port, pairingKey: key, salt: salt) else {
+        // 远程：另开一条绑在物理网卡上的直连，打通后不再经过 EasyTier（它的用户态协议栈扛不住大块 UDP）
+        let directIf: String? = dialedRemote ? (getenv("ET_BIND_IF").map { String(cString: $0) } ?? "") : nil
+        guard let client = RTClient(host: host, port: port, pairingKey: key, salt: salt, directInterface: directIf) else {
             print("实时通道：连不上 \(host):\(port)")
             return
         }
@@ -75,11 +80,15 @@ final class PadServer {
                 self.onEvent?(.rtReady)
             }
         }
+        client.onDirectCandidate = { [weak self] a in self?.send(.rtDirect, jsonEncode(DirectPath.Candidates(addrs: a))) }
         client.start()
         rt = client
+        if let pending = pendingDirect { client.addDirectCandidates(pending) }
     }
 
     private let queue = DispatchQueue(label: "pivot.pad.net", qos: .userInteractive)
+    /// 事件回调所在的串行队列（解码只在这上面做）
+    var eventQueue: DispatchQueue { queue }
     private var listener: NWListener?
     private var wirelessListener: NWListener?
     private var connection: NWConnection?
@@ -276,6 +285,11 @@ final class PadServer {
             onEvent?(.clipboard(payload))
         case .rtOffer:
             if let offer = jsonDecode(RT.Offer.self, payload) { startRealtime(offer) }
+        case .rtDirect:
+            if let c = jsonDecode(DirectPath.Candidates.self, payload) {
+                pendingDirect = c.addrs
+                rt?.addDirectCandidates(c.addrs)
+            }
         case .ping:
             send(.pong, payload)
         case .bye:
@@ -290,6 +304,8 @@ final class PadServer {
     func send(_ type: MsgType, _ payload: Data = Data()) {
         queue.async { [self] in
             // 触控和回执优先走 UDP：不会被前面卡住的包挡住
+            // 关键帧请求 UDP 和 TCP 各发一份：谁先到都行，Mac 重复收到也无害
+            if type == .keyframeRequest, let rt, rt.ready { rt.sendKeyframeRequest(payload) }
             if let rt, (type == .touch || type == .ack), rt.ready {
                 if type == .touch {
                     let critical = TouchPacket.decode(payload)?.contacts.contains { $0.phase != .moved && $0.phase != .stationary } ?? false

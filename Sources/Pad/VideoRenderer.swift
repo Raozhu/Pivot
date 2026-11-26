@@ -14,7 +14,10 @@ final class VideoRenderer {
     private let lock = NSLock()
 
     /// 需要对端补发关键帧
-    var onNeedKeyframe: (() -> Void)?
+    /// 参数：只要长期参考帧刷新就够（解码器状态还在）
+    var onNeedKeyframe: ((Bool) -> Void)?
+    /// 解码器状态丢了（清空、出错、换路径），只有真正的关键帧才能接上
+    private var needIDR = true
     /// 某个尺寸的第一帧已送显（宽、高）
     var onFirstFrame: ((Int, Int) -> Void)?
     private var announcedSize: (Int, Int)?
@@ -53,6 +56,7 @@ final class VideoRenderer {
     func reset(keepImage: Bool = false) {
         format = nil
         waitingForKey = true
+        needIDR = true
         announcedSize = nil
         layer.sampleBufferRenderer.flush(removingDisplayedImage: !keepImage, completionHandler: nil)
     }
@@ -60,7 +64,7 @@ final class VideoRenderer {
     /// 有帧丢了、补不回来：之后的帧依赖它，解出来会花屏，所以等下一个关键帧
     func waitForKeyframe() {
         waitingForKey = true
-        onNeedKeyframe?()
+        onNeedKeyframe?(!needIDR)
     }
 
     func setFormat(_ payload: Data) {
@@ -101,15 +105,18 @@ final class VideoRenderer {
             renderer.flush(removingDisplayedImage: false, completionHandler: nil)
             if !wantSR { decoded = nil }
             waitingForKey = true
+            needIDR = true
         }
         if renderer.status == .failed || renderer.requiresFlushToResumeDecoding {
             renderer.flush()
             waitingForKey = true
+            needIDR = true
         }
-        guard let format else { onNeedKeyframe?(); return false }
+        guard let format else { onNeedKeyframe?(false); return false }
         if waitingForKey {
-            guard header.isKey else { onNeedKeyframe?(); return false }
+            guard header.isKey || (header.isRefresh && !needIDR) else { onNeedKeyframe?(!needIDR); return false }
             waitingForKey = false
+            if header.isKey { needIDR = false }
         }
         guard let sample = makeSample(data, format: format, isKey: header.isKey) else { return false }
 
@@ -120,10 +127,12 @@ final class VideoRenderer {
             if !path.decode(sample, format: format, targetWidth: target) {
                 shown = false
                 waitingForKey = true
-                onNeedKeyframe?()
+                needIDR = true
+                onNeedKeyframe?(false)
             }
         } else {
             renderer.enqueue(sample)
+            PadTelemetry.shared.presentedFrame()
         }
 
         let dims = CMVideoFormatDescriptionGetDimensions(format)
@@ -315,6 +324,7 @@ private final class DecodedPath {
             let r = layer.sampleBufferRenderer
             if r.status == .failed { r.flush() }
             r.enqueue(sample)
+            PadTelemetry.shared.presentedFrame()
         }
     }
 }

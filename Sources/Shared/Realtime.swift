@@ -26,6 +26,9 @@ enum RT {
         case stats = 5      // pad → mac：u32 收到包数 + u32 丢包数 + u32 丢帧数
         case helloAck = 6   // mac → pad：收到报到
         case audio = 7      // mac → pad：和 TCP 的 audio 相同的负载
+        case keyframeRequest = 8  // pad → mac：要关键帧（TCP 丢包时会被重传拖住，所以 UDP 也发一份）
+        case probe = 9      // 任一方，经直连：打洞探测
+        case probeAck = 10  // 回探测：收到的一方据此确认直连通了
     }
 }
 
@@ -116,11 +119,12 @@ struct RTShard {
     /// 帧数据总长（含参数集前缀）
     var frameLength: UInt32
     var payload: Data
+    var isRefresh = false
 
     func encode() -> Data {
         var d = Data(capacity: 1 + Self.headerSize + payload.count)
         d.append(RT.Kind.video.rawValue)
-        d.appendLE(frame); d.append(isKey ? 1 : 0); d.appendLE(captureNs); d.appendLE(touchTs)
+        d.appendLE(frame); d.append((isKey ? 1 : 0) | (isRefresh ? 2 : 0)); d.appendLE(captureNs); d.appendLE(touchTs)
         d.appendLE(index); d.appendLE(dataCount); d.appendLE(parityCount); d.appendLE(frameLength)
         d.append(payload)
         return d
@@ -133,7 +137,7 @@ struct RTShard {
               let i: UInt16 = r.read(), let dc: UInt16 = r.read(), let pc: UInt16 = r.read(), let len: UInt32 = r.read(),
               dc > 0, i < dc &+ pc else { return nil }
         return RTShard(frame: f, isKey: k & 1 == 1, captureNs: c, touchTs: t, index: i, dataCount: dc, parityCount: pc,
-                       frameLength: len, payload: body.subdata(in: (body.startIndex + headerSize)..<body.endIndex))
+                       frameLength: len, payload: body.subdata(in: (body.startIndex + headerSize)..<body.endIndex), isRefresh: k & 2 != 0)
     }
 
     /// 帧数据 = u32 参数集长度 + 参数集 + 视频数据
@@ -154,7 +158,7 @@ struct RTShard {
     }
 
     /// 把一帧切成数据片 + 纠错片
-    static func make(frame: UInt32, isKey: Bool, captureNs: UInt64, touchTs: UInt64, blob: Data, parityRatio: Double) -> [RTShard] {
+    static func make(frame: UInt32, isKey: Bool, isRefresh: Bool = false, captureNs: UInt64, touchTs: UInt64, blob: Data, parityRatio: Double) -> [RTShard] {
         let size = RT.shardSize
         let dataCount = max(1, (blob.count + size - 1) / size)
         // 小帧至少一片纠错；关键帧多给一些，丢了代价最大
@@ -173,13 +177,13 @@ struct RTShard {
                 for j in 0..<size { parity[p][j] ^= chunk[j] }
                 shards.append(RTShard(frame: frame, isKey: isKey, captureNs: captureNs, touchTs: touchTs, index: UInt16(i),
                                       dataCount: UInt16(dataCount), parityCount: UInt16(parityCount),
-                                      frameLength: UInt32(blob.count), payload: Data(chunk[0..<(end - start)])))
+                                      frameLength: UInt32(blob.count), payload: Data(chunk[0..<(end - start)]), isRefresh: isRefresh))
             }
         }
         for p in 0..<parityCount {
             shards.append(RTShard(frame: frame, isKey: isKey, captureNs: captureNs, touchTs: touchTs, index: UInt16(dataCount + p),
                                   dataCount: UInt16(dataCount), parityCount: UInt16(parityCount),
-                                  frameLength: UInt32(blob.count), payload: Data(parity[p])))
+                                  frameLength: UInt32(blob.count), payload: Data(parity[p]), isRefresh: isRefresh))
         }
         return shards
     }
@@ -194,6 +198,7 @@ final class RTFrameAssembler {
         var touchTs: UInt64
         var format: Data?
         var data: Data
+        var isRefresh = false
     }
 
     private struct Partial {
@@ -207,12 +212,16 @@ final class RTFrameAssembler {
         var parity: [Data?]
         var received = 0
         var firstNs: UInt64
+        var isRefresh = false
     }
 
     private var partials: [UInt32: Partial] = [:]
     private var lastDelivered: UInt32?
-    /// 超过这个时间还没拼齐就放弃
+    /// 超过这个时间还没拼齐就放弃。大帧另按 10 Mbps 的传输时间加宽（最多再加 480 ms）：
+    /// 远程原画的关键帧几百 KB，固定 120 ms 根本送不完，会被整帧扔掉然后无限等关键帧。
+    /// 更新的帧拼好时，比它旧的半成品照样立刻放弃，所以放宽不会拖慢后面的帧
     var deadlineNs: UInt64 = 120_000_000
+    private func deadline(for p: Partial) -> UInt64 { deadlineNs + min(480_000_000, UInt64(p.frameLength) * 800) }
 
     var onFrame: ((Frame) -> Void)?
     /// 有帧补不回来、被放弃（参数：被放弃的帧数）
@@ -226,7 +235,7 @@ final class RTFrameAssembler {
         var p = partials[s.frame] ?? Partial(dataCount: Int(s.dataCount), parityCount: Int(s.parityCount), frameLength: Int(s.frameLength),
                                              isKey: s.isKey, captureNs: s.captureNs, touchTs: s.touchTs,
                                              data: Array(repeating: nil, count: Int(s.dataCount)),
-                                             parity: Array(repeating: nil, count: Int(s.parityCount)), firstNs: now)
+                                             parity: Array(repeating: nil, count: Int(s.parityCount)), firstNs: now, isRefresh: s.isRefresh)
         guard p.dataCount == Int(s.dataCount), p.parityCount == Int(s.parityCount) else { return }
         let i = Int(s.index)
         if i < p.dataCount {
@@ -245,7 +254,7 @@ final class RTFrameAssembler {
     /// 定时调用：把超时的半成品放弃掉
     func expire(now: UInt64 = monotonicNs()) {
         var lost = 0
-        for (k, p) in partials where now - p.firstNs > deadlineNs {
+        for (k, p) in partials where now - p.firstNs > deadline(for: p) {
             partials[k] = nil
             if lastDelivered == nil || isOlder(lastDelivered!, than: k) { lastDelivered = k }
             lost += 1
@@ -284,7 +293,7 @@ final class RTFrameAssembler {
         lastDelivered = index
         if lost > 0 { onLoss?(lost) }
         guard let (format, data) = RTShard.splitBlob(blob) else { return }
-        onFrame?(Frame(index: index, isKey: p.isKey, captureNs: p.captureNs, touchTs: p.touchTs, format: format, data: data))
+        onFrame?(Frame(index: index, isKey: p.isKey, captureNs: p.captureNs, touchTs: p.touchTs, format: format, data: data, isRefresh: p.isRefresh))
     }
 
     func reset() { partials.removeAll(); lastDelivered = nil }
@@ -350,6 +359,24 @@ final class RTSocket {
         Self.tune(fd)
     }
 
+    /// 直连用：IPv4、系统分配端口、绑在指定物理网卡上（绕开代理 TUN 和 EasyTier），不连接，sendto 发给谁都行
+    init?(boundTo interface: String?) {
+        fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+        guard fd >= 0 else { return nil }
+        if let interface, !interface.isEmpty {
+            var idx = if_nametoindex(interface)
+            if idx != 0 { setsockopt(fd, IPPROTO_IP, IP_BOUND_IF, &idx, socklen_t(MemoryLayout<UInt32>.size)) }
+        }
+        var addr = sockaddr_in()
+        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_port = 0
+        addr.sin_addr.s_addr = INADDR_ANY
+        let ok = withUnsafePointer(to: &addr) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) } }
+        guard ok == 0 else { Darwin.close(fd); return nil }
+        Self.tune(fd)
+    }
+
     /// iPad：连向 Mac
     init?(host: String, port: UInt16) {
         var hints = addrinfo()
@@ -362,6 +389,16 @@ final class RTSocket {
         guard fd >= 0 else { return nil }
         guard Darwin.connect(fd, info.pointee.ai_addr, info.pointee.ai_addrlen) == 0 else { Darwin.close(fd); return nil }
         Self.tune(fd)
+    }
+
+    var localPort: UInt16? {
+        var a = sockaddr_storage()
+        var len = socklen_t(MemoryLayout<sockaddr_storage>.size)
+        let r = withUnsafeMutablePointer(to: &a) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(fd, $0, &len) } }
+        guard r == 0 else { return nil }
+        return withUnsafePointer(to: &a) { p -> UInt16 in
+            p.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { UInt16(bigEndian: $0.pointee.sin_port) }
+        }
     }
 
     private static func tune(_ fd: Int32) {

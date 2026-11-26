@@ -16,7 +16,9 @@ final class MeshLink {
         set { UserDefaults.standard.set(newValue.map { jsonEncode($0) }, forKey: storeKey) }
     }
 
-    private let queue = DispatchQueue(label: "pivot.mesh")
+    // 必须是最高优先级：EasyTier 的收发线程是在这个队列上起的，会继承它的 QoS。
+    // 默认优先级下 iPad 一忙（解码、渲染）它就被往后排，定时器还会被系统合并，包就一坨一坨地进出（触控抖动 60–80 ms）
+    private let queue = DispatchQueue(label: "pivot.mesh", qos: .userInteractive)
     private let pathMonitor = NWPathMonitor()
     /// STUN 服务器：国内几台常用的，直接写 IP 免得域名被代理解析成假地址；域名也留着作后备
     private static let stunServers = [
@@ -138,7 +140,9 @@ final class MeshLink {
         instance_name = \(quote(instanceName))
         hostname = \(quote("pivot-" + name))
         dhcp = true
-        listeners = []
+        # 只开 IPv6 的 UDP 监听：手机网络和热点下 IPv4 在运营商 NAT 后面，打洞很难成功，
+        # 但 IPv6 是公网地址，家里或公司有 IPv6 的节点可以直接连进来，不用打洞
+        listeners = ["udp://[::]:11010"]
         stun_servers = [\(stunServers.map(quote).joined(separator: ", "))]
 
         [network_identity]
